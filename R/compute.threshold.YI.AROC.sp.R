@@ -1,0 +1,62 @@
+compute.threshold.YI.AROC.sp <-
+function(object, newdata) {
+  if(class(object)[2] != "AROC.sp") {
+    stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+  }
+  names.cov <- all.vars(object$formula)[-1]
+  if(!missing(newdata) && !inherits(newdata, "data.frame"))
+    stop("Newdata must be a data frame")
+  if(!missing(newdata) && length(names.cov) != 0 && sum(is.na(match(names.cov, names(newdata)))))
+    stop("Not all needed variables are supplied in newdata") 
+
+  if(missing(newdata)) {
+    newdata <- cROCData(object$data, names.cov, object$group)
+  } else {
+    newdata <- na.omit(newdata[,names.cov,drop = FALSE])
+  }  
+  p <- seq(0, 1, length = 500)
+  np <- length(p)
+  npred <- nrow(newdata)
+
+  # Compute the AROC
+  sigma0 <- summary(object$fit)$sigma
+  data.d <- (object$data[object$data[,object$group] != object$tag.healthy,])[!object$missing.ind$d,]
+  n1 <- nrow(data.d)
+  pre.placement.values <- (data.d[,object$marker] - predict(object$fit, newdata = data.d))/sigma0
+
+  if(object$est.cdf.h == "normal") {
+    u1 <- 1 - pnorm(pre.placement.values)
+  } else {
+    res0p <- object$fit$residuals/sigma0
+    F0res <- ecdf(res0p)
+    u1 <- 1 - F0res(pre.placement.values)
+  }
+  AROC <- numeric(np)
+  for(i in 1:np){
+    AROC[i] <- sum(u1 <= p[i])/n1
+  }
+
+  # Compute YI and associated threshold values
+  difbb <- AROC -  p
+  FPF <- mean(p[which(difbb == max(difbb))])
+  YI <- max(difbb)
+
+  pred0 <- predict(object$fit, newdata = newdata)
+  if(object$est.cdf == "normal") {
+    csf0_inv <- qnorm(1-FPF)
+  } else {
+    csf0_inv <- quantile(res0p, 1-FPF, type = 1)
+  }
+  
+  thresholds <- pred0 + sigma0*csf0_inv
+  #thresholds <- qnorm(1 - FPF, mean = pred0, sd = sigma0)
+
+  res <- list()
+  res$call <- match.call()
+  res$newdata <- newdata
+  res$thresholds <- thresholds
+  res$YI  <- YI
+  res$FPF <- FPF
+  res
+  
+}
