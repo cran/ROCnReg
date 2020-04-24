@@ -12,13 +12,13 @@
 \tabular{ll}{
 Package: \tab ROCnReg\cr
 Type: \tab Package\cr
-Version: \tab 1.0\cr
-Date: \tab 2020-03-14\cr
+Version: \tab 1.0-1\cr
+Date: \tab 2020-04-24\cr
 License: \tab GPL\cr
 }
 }
 \author{
-Maria Xose Rodriguez-Alvarez and Vanda Inacio de Carvalho
+Maria Xose Rodriguez-Alvarez and Vanda Inacio 
 Maintainer: Maria Xose Rodriguez-Alvarez <mxrodriguez@bcamath.org>
 }
 \references{
@@ -35,6 +35,8 @@ Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparamet
 Janes, H., and Pepe, M.S. (2009). Adjusting for covariate effects on classification accuracy using the covariate-adjusted receiver operating characteristic curve. Biometrika, \bold{96}, 371--382.
 
 Pepe, M.S. (1998). Three approaches to regression analysis of receiver operating characteristic curves for continuous test results. \emph{Biometrics} \bold{54}, 124--135.
+
+Rodriguez-Alvarez, M. X. and Inacio, V., and  (2020). ROCnReg: An R Package for Receiver Operating Characteristic Curve Inference with and without Covariate Information. arXiv preprint arXiv:2003.13111.
 
 Rodriguez-Alvarez, M.X., Tahoces, P. G., Cadarso-Suarez, C., and Lado, M.J. (2011). Comparative study of ROC regression techniques--Applications for the computer-aided diagnostic system in breast cancer detection. Computational Statistics and Data Analysis, \bold{55}, 888--902.
 

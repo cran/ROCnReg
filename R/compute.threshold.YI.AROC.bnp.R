@@ -1,7 +1,7 @@
 compute.threshold.YI.AROC.bnp <-
 function(object, newdata) {
-    if(class(object)[2] != "AROC.bnp") {
-        stop(paste0("This function cannot be used for this object class: ", class(object)[2]))
+    if(class(object)[1] != "AROC.bnp") {
+        stop(paste0("This function cannot be used for this object class: ", class(object)[1]))
     }
     names.cov <- all.vars(object$fit$formula)[-1]
     if(!missing(newdata) && !inherits(newdata, "data.frame"))

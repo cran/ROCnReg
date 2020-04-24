@@ -8,17 +8,17 @@ Empirical estimation of the pooled ROC curve.
 This function estimates the pooled ROC curve using the empirical estimator proposed by Hsieh and Turnbull (1996).
 }
 \usage{
-pooledROC.emp(marker, group, tag.healthy, data, 
-	p = seq(0, 1, l = 101), B = 500, 
+pooledROC.emp(marker, group, tag.h, data, 
+	p = seq(0, 1, l = 101), B = 1000, 
     method = c("ncoutcome", "coutcome"), pauc = pauccontrol())
 }
 \arguments{
  \item{marker}{A character string with the name of the diagnostic test variable.}
   \item{group}{A character string with the name of the variable that distinguishes healthy from diseased individuals.}
-  \item{tag.healthy}{The value codifying healthy individuals in the variable \code{group}.}
+  \item{tag.h}{The value codifying healthy individuals in the variable \code{group}.}
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve.}
-  \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 500.}
+  \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
   \item{method}{A character string specifying if bootstrap resampling (for the confidence intervals) should be done with or without regard to the disease status (``coutcome'' or ``noutcome''). In both cases, a naive bootstrap is used. By default, the resampling is done conditionally on the disease status.}
  \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
 }
@@ -70,7 +70,7 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
 m0_emp <- pooledROC.emp(marker = "l_marker1", group = "status",
-tag.healthy = 0, data = newpsa, p = seq(0,1,l=101), B = 10,
+tag.h = 0, data = newpsa, p = seq(0,1,l=101), B = 10,
 method = "coutcome", pauc = pauccontrol(compute = TRUE, value = 0.5, focus = "FPF"))
 
 summary(m0_emp)
@@ -79,7 +79,7 @@ plot(m0_emp)
 }
 \dontshow{
 m0_emp <- pooledROC.emp(marker = "l_marker1", group = "status",
-tag.healthy = 0, data = newpsa, p = seq(0,1,l=101), B = 10,
+tag.h = 0, data = newpsa, p = seq(0,1,l=101), B = 10,
 method = "coutcome", pauc = pauccontrol(compute = TRUE, value = 0.5, focus = "FPF"))
 
 summary(m0_emp)

@@ -1,7 +1,7 @@
 compute.threshold.YI.cROC.bnp <-
 function(object, newdata) {
-    if(class(object)[2] != "cROC.bnp") {
-        stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+    if(class(object)[1] != "cROC.bnp") {
+        stop(paste0("This function can not be used for this object class: ", class(object)[1]))
     }
     names.cov.h <- all.vars(object$fit$h$formula)[-1]
     names.cov.d <- all.vars(object$fit$d$formula)[-1]

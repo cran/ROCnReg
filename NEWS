@@ -1,0 +1,9 @@
+	CHANGES in `ROCnReg' VERSION 1.0-1
+		
+	o	Argument `tag.heathy' in functions  pooledROC.dpm, pooledROC.BB, pooledROC.kernel, pooledROC.emp, cROC.bnp, cROC.sp, cROC.kernel, AROC.bnp, AROC.sp and AROC.kernel has been replaced by `tag.h'.
+
+	o	Argument `formula.healthy' in functions cROC.bnp, cROC.sp, AROC.bnp and AROC.sp has been replaced by `formula.h'.
+
+	o	Argument `formula.diseased' in functions cROC.bnp and cROC.sp has been replaced by `formula.d'.
+
+	o	Argument `prior' in function AROC.bnp has been replaced by `prior.h'.

@@ -1,5 +1,5 @@
 pooledROC.dpm <-
-function(marker, group, tag.healthy, data,
+function(marker, group, tag.h, data,
 standardise = TRUE,
 p = seq(0,1,l = 101),
 compute.lpml = FALSE,
@@ -18,8 +18,8 @@ mcmc = mcmccontrol()) {
     prior.d <- do.call("priorcontrol.dpm", prior.d)
     
     # Obtain the marker in healthy and diseased
-    yh <- data[,marker][data[,group] == tag.healthy]
-    yd <- data[,marker][data[,group] != tag.healthy]
+    yh <- data[,marker][data[,group] == tag.h]
+    yd <- data[,marker][data[,group] != tag.h]
 
     # Missing data
     omit.h <- is.na(yh)
@@ -501,6 +501,6 @@ mcmc = mcmccontrol()) {
     }
     
     res$fit <- list(h = list(P = p0, Mu = mu0, Sigma2 = sigma02), d = list(P = p1, Mu = mu1, Sigma2 = sigma12))
-    class(res) <- c("pooledROC","pooledROC.dpm")
+    class(res) <- c("pooledROC.dpm", "pooledROC")
     res
 }

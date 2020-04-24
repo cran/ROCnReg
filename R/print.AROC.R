@@ -1,6 +1,6 @@
 print.AROC <-
 function(x, ...) {
-	method <- switch(class(x)[2], "AROC.kernel" = "AROC Kernel-based", "AROC.bnp" = "AROC Bayesian nonparametric", "AROC.bsp" = "AROC Bayesian semiparametric", "AROC.sp" = "AROC semiparametric")
+	method <- switch(class(x)[1], "AROC.kernel" = "AROC Kernel-based", "AROC.bnp" = "AROC Bayesian nonparametric", "AROC.bsp" = "AROC Bayesian semiparametric", "AROC.sp" = "AROC semiparametric")
 
 	cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")
 	cat(paste0("\nApproach: ", method))

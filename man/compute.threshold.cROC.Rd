@@ -12,15 +12,15 @@ compute.threshold.cROC(object, criterion = c("FPF", "YI"), FPF, newdata)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{object}{An object of class \code{cROC} as produced by \code{cROC.bnp()}, \code{cROC.sp()} or \code{cROC.kernel()}.}
+  \item{object}{An object of class \code{cROC} as produced by \code{cROC.bnp()}, \code{cROC.sp()}, or \code{cROC.kernel()}.}
   \item{criterion}{A character string indicating whether the covariate-specific threshold values should be computed based on the Youden index (``YI'') or for fixed set of false positive fractions (``FPF''). }
   \item{FPF}{For \code{criterion = "FPF"}, a numeric vector with the FPF at which to calculate the covariate-specific threshold values. Atomic values are also valid.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the covariate-specific threshold values will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
 }
 \details{
-Estimates covariate-specific ROC-based threshold values based on two different criteria, the Youden Index (YI) and the one that gives rise to a pre-specified FPF.
+Estimates covariate-specific ROC-based threshold values based on two different criteria, the Youden index (YI) and the one that gives rise to a pre-specified FPF.
 
-In the conditional case, the Youden Index is defined as
+In the conditional case, the Youden index is defined as
 \deqn{YI(\mathbf{x}) = \max_{c}|TPF(c|\mathbf{x}) - FPF(c|\mathbf{x})| = \max_{c}|F_{\bar{D}}(c|\mathbf{x}) - F_{D}(c|\mathbf{x})|,}
 where
 \deqn{F_{D}(y|\mathbf{x}) = Pr(Y_{D} \leq y | \mathbf{X}_{D} = \mathbf{x}),}
@@ -69,10 +69,10 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 # Log-transform the biomarker
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
-cROC_bnp <- cROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
-			  formula.diseased = l_marker1 ~ f(age, K = 0),
+cROC_bnp <- cROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
+			  formula.d = l_marker1 ~ f(age, K = 0),
               group = "status", 
-              tag.healthy = 0, 
+              tag.h = 0, 
               data = newpsa,
               standardise = TRUE,
               p = seq(0,1,l=101),
@@ -111,10 +111,10 @@ th_cROC_bnp_fpf <- compute.threshold.cROC(cROC_bnp, criterion = "FPF", FPF = 0.1
 
 }
 \dontshow{
-cROC_bnp <- cROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
-			  formula.diseased = l_marker1 ~ f(age, K = 0),
+cROC_bnp <- cROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
+			  formula.d = l_marker1 ~ f(age, K = 0),
               group = "status", 
-              tag.healthy = 0, 
+              tag.h = 0, 
               data = newpsa,
               standardise = TRUE,
               p = seq(0,1,l=101),

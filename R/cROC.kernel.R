@@ -1,11 +1,11 @@
 cROC.kernel <-
-function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c("LC","LL"), data, newdata, pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
+function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), data, newdata, pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
     
     pauc <- do.call("pauccontrol", pauc)
     
-    compute.ROC <- function(marker, covariate, group, tag.healthy, bw, regtype, data, newdata, pauc, p = seq(0,1,l = 101)) {
-        data.h <- data[data[,group] == tag.healthy,]
-        data.d <- data[data[,group] != tag.healthy,]
+    compute.ROC <- function(marker, covariate, group, tag.h, bw, regtype, data, newdata, pauc, p = seq(0,1,l = 101)) {
+        data.h <- data[data[,group] == tag.h,]
+        data.d <- data[data[,group] != tag.h,]
         
         n0 <- nrow(data.h)
         n1 <- nrow(data.d)
@@ -113,10 +113,10 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
 
     # New data, removing missing values
     data.new <- data[,c(marker,group,covariate)]
-    omit.h <- apply(data.new[data.new[,group] == tag.healthy, c(marker, group, covariate)], 1, anyNA)
-    omit.d <- apply(data.new[data.new[,group] != tag.healthy, c(marker, group, covariate)], 1, anyNA)
+    omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, covariate)], 1, anyNA)
+    omit.d <- apply(data.new[data.new[,group] != tag.h, c(marker, group, covariate)], 1, anyNA)
     
-    data.new <- rbind(data.new[data.new[,group] == tag.healthy,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.healthy,,drop = FALSE][!omit.d,,drop = FALSE])
+    data.new <- rbind(data.new[data.new[,group] == tag.h,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.h,,drop = FALSE][!omit.d,,drop = FALSE])
     
     # New data (for predictions)    
     if(missing(newdata)) {
@@ -125,7 +125,7 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
         newdata <- na.omit(newdata[,covariate,drop = FALSE])
     }
     
-    croc <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.healthy = tag.healthy, bw = bw.aux, regtype = regtype.aux, data = data.new, newdata = newdata, pauc = pauc, p = p)
+    croc <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, data = data.new, newdata = newdata, pauc = pauc, p = p)
     crocp <- croc$ROC
     caucp <- croc$AUC
     if(pauc$compute){
@@ -150,7 +150,7 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
             data.boot.d[,marker] <- croc$fit$d$fit.mean$mean + sqrt(croc$fit$d$fit.var$mean)*res.d.b
             data.boot <- rbind(data.boot.d, data.boot.h)
             
-            res.boot <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.healthy = tag.healthy, bw = bw.aux, regtype = regtype.aux, data = data.boot, newdata = newdata, pauc = pauc, p = p)
+            res.boot <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, data = data.boot, newdata = newdata, pauc = pauc, p = p)
             crocpb[,,l] <- res.boot$ROC
             caucb[,l] <- res.boot$AUC
             if(pauc$compute){
@@ -195,7 +195,7 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$marker <- marker
     res$group <- group
-    res$tag.healthy <- tag.healthy
+    res$tag.h <- tag.h
     res$covariate <- covariate
     res$p <- p
     res$ROC <- cROCres
@@ -211,6 +211,6 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
     }
     res$fit <- croc$fit
     res$ci.fit <- ifelse(B, TRUE, FALSE)
-    class(res) <- c("cROC","cROC.kernel")
+    class(res) <- c("cROC.kernel", "cROC")
     res
 }

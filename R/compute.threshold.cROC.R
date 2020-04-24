@@ -1,8 +1,8 @@
 compute.threshold.cROC <-
 function(object, criterion = c("FPF", "YI"), FPF, newdata) {
-	object.class <- class(object)[2]
+	object.class <- class(object)[1]
 	if (!(object.class %in% c("cROC.bnp", "cROC.kernel", "cROC.sp"))) {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}
 
 	criterion <- match.arg(criterion)

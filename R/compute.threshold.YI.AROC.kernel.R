@@ -1,7 +1,7 @@
 compute.threshold.YI.AROC.kernel <-
 function(object, newdata) {
-	if(class(object)[2] != "AROC.kernel") {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+	if(class(object)[1] != "AROC.kernel") {
+		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}
   # Newdata
 	names.cov <- object$covariate
@@ -24,7 +24,7 @@ function(object, newdata) {
 	npred <- length(xp)
 
 	# Compute the AROC
-	data.d <- (object$data[object$data[,object$group] != object$tag.healthy,])[!object$missing.ind$d,]
+	data.d <- (object$data[object$data[,object$group] != object$tag.h,])[!object$missing.ind$d,]
 	x1 <- data.d[,object$covariate]
 	y1 <- data.d[,object$marker]
 	n1 <- length(y1)

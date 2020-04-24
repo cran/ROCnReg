@@ -1,6 +1,6 @@
 print.pooledROC <-
 function(x, ...) {
-	method <- switch(class(x)[2], "pooledROC.BB" = "Pooled ROC curve - Bayesian bootstrap", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.kernel" = "Pooled ROC curve - Kernel-based", "pooledROC.dpm" = "Pooled ROC curve - Bayesian DPM")
+	method <- switch(class(x)[1], "pooledROC.BB" = "Pooled ROC curve - Bayesian bootstrap", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.kernel" = "Pooled ROC curve - Kernel-based", "pooledROC.dpm" = "Pooled ROC curve - Bayesian DPM")
 	cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")
 	cat(paste0("\nApproach: ", method))
 	cat("\n----------------------------------------------\n")

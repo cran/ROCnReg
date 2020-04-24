@@ -4,16 +4,16 @@
 Default cROC plotting
 }
 \description{
-Takes a fitted \code{cROC} object produced by \code{cROC.bnp()}, \code{cROC.sp()} or \code{cROC.kernel()} and plots the covariate-specific ROC curve (cROC) and associated area under the cROC. The suitable type of graphic is chosen according to the number and nature of the covariates.
+Takes a fitted \code{cROC} object produced by \code{cROC.bnp()}, \code{cROC.sp()}, or \code{cROC.kernel()} and plots the covariate-specific ROC curve (cROC) and associated area under the cROC curve. The suitable type of graphic is chosen according to the number and nature of the covariates.
 }
 \usage{
 \method{plot}{cROC}(x, ask = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{an object of class \code{cROC} as produced by \code{cROC.bnp()}, \code{cROC.sp()} or \code{cROC.kernel()}}
-  \item{ask}{a logical value. If TRUE, the default, the user is asked for confirmation, before a new figure is drawn.}
-  \item{\dots}{further arguments passed to or from other methods}
+  \item{x}{An object of class \code{cROC} as produced by \code{cROC.bnp()}, \code{cROC.sp()}, or \code{cROC.kernel()}.}
+  \item{ask}{A logical value. If TRUE, the default, the user is asked for confirmation, before a new figure is drawn.}
+  \item{\dots}{Further arguments passed to or from other methods.}
 }
 %\details{
 %TODO
@@ -49,10 +49,10 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 # Log-transform the biomarker
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
-cROC_bnp <- cROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
-               formula.diseased = l_marker1 ~ f(age, K = 0),
+cROC_bnp <- cROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
+               formula.d = l_marker1 ~ f(age, K = 0),
                group = "status", 
-               tag.healthy = 0,
+               tag.h = 0,
                data = newpsa,
                standardise = TRUE, 
                p = seq(0, 1, len = 101),
@@ -68,10 +68,10 @@ plot(cROC_bnp)
 \dontshow{
 agep <- seq(min(newpsa$age), max(newpsa$age), length = 5)
 df.pred <- data.frame(age = agep)
-cROC_bnp <- cROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
-               formula.diseased = l_marker1 ~ f(age, K = 0),
+cROC_bnp <- cROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
+               formula.d = l_marker1 ~ f(age, K = 0),
                group = "status", 
-               tag.healthy = 0,
+               tag.h = 0,
                data = newpsa,
                newdata = df.pred,
                standardise = TRUE, 

@@ -1,7 +1,7 @@
 predictive.checks.AROC.bnp <-
 function(object, statistics = c("min","max","kurtosis","skewness"), ndensity = 512, devnew = TRUE) {
-    if(class(object)[2] != "AROC.bnp") {
-        stop(paste0("This function can not be used for this object class: ", class(object)[object]))
+    if(class(object)[1] != "AROC.bnp") {
+        stop(paste0("This function can not be used for this object class: ", class(object)[1]))
     }
     
     y0 <- object$data_model$y$h
@@ -21,7 +21,7 @@ function(object, statistics = c("min","max","kurtosis","skewness"), ndensity = 5
         }
     }
     
-    predictive.checks.helper(y = y0, yrep = yrep, statistics = statistics, devnew = devnew, group = "nondiseased", ndensity = ndensity)
+    predictive.checks.helper(y = y0, yrep = yrep, object$marker, statistics = statistics, devnew = devnew, group = "H", ndensity = ndensity)
     
     res <- list()
     res$yrep <- list(h = yrep)

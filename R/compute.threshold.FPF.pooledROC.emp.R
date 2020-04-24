@@ -1,7 +1,7 @@
 compute.threshold.FPF.pooledROC.emp <-
 function(object, FPF = 0.5) {
-	if(class(object)[2] != "pooledROC.emp") {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+	if(class(object)[1] != "pooledROC.emp") {
+		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}
 	
 	F1emp <- ecdf(object$marker$d[!object$missing.ind$d])

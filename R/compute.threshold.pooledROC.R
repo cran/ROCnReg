@@ -1,8 +1,8 @@
 compute.threshold.pooledROC <-
 function(object, criterion = c("FPF", "YI"), FPF) {
-	object.class <- class(object)[2]
+	object.class <- class(object)[1]
 	if (!(object.class %in% c("pooledROC.BB", "pooledROC.emp", "pooledROC.emp", "pooledROC.kernel", "pooledROC.dpm"))) {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}
 
 	criterion <- match.arg(criterion)

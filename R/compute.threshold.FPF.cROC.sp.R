@@ -1,7 +1,7 @@
 compute.threshold.FPF.cROC.sp <-
 function(object, newdata, FPF = 0.5) {
-	if(class(object)[2] != "cROC.sp") {
-		stop(paste0("This function cannot be used for this object class: ", class(object)[2]))
+	if(class(object)[1] != "cROC.sp") {
+		stop(paste0("This function cannot be used for this object class: ", class(object)[1]))
 	}
 
 	# Newdata

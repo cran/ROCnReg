@@ -17,9 +17,7 @@ pauccontrol(compute = FALSE, focus = c("FPF", "TPF"), value = 1)
 \details{The value returned by this function is used as a control argument of the \code{\link{AROC.bnp}}, \code{\link{AROC.sp}}, \code{\link{AROC.kernel}}, \code{\link{cROC.bnp}}, \code{\link{cROC.sp}}, \code{\link{cROC.kernel}} functions.
 }
 \value{A list with components for each of the possible arguments.}
-\references{
-Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. Technical report.
-}
+
 %\author{
 %%  ~~who you are~~
 %}
@@ -46,10 +44,10 @@ agep <- seq(min(newpsa$age), max(newpsa$age), length = 5)
 df.pred <- data.frame(age = agep)
 
 \donttest{
-cROC_sp_normal <- cROC.sp(formula.healthy = l_marker1 ~ age,
-                          formula.diseased = l_marker1 ~ age,
+cROC_sp_normal <- cROC.sp(formula.h = l_marker1 ~ age,
+                          formula.d = l_marker1 ~ age,
                           group = "status", 
-                          tag.healthy = 0,
+                          tag.h = 0,
                           data = newpsa,
                           newdata = df.pred,
                           est.cdf = "normal",
@@ -58,10 +56,10 @@ cROC_sp_normal <- cROC.sp(formula.healthy = l_marker1 ~ age,
                           B = 10)
 }
 \dontshow{
-cROC_sp_normal <- cROC.sp(formula.healthy = l_marker1 ~ age,
-                          formula.diseased = l_marker1 ~ age,
+cROC_sp_normal <- cROC.sp(formula.h = l_marker1 ~ age,
+                          formula.d = l_marker1 ~ age,
                           group = "status", 
-                          tag.healthy = 0,
+                          tag.h = 0,
                           data = newpsa,
                           newdata = df.pred,
                           est.cdf = "normal",

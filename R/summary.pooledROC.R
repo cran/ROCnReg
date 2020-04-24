@@ -2,7 +2,7 @@ summary.pooledROC <-
 function(object, ...) {
 	res <- list()	
 	res$call <- object$call
-	method <- switch(class(object)[2], "pooledROC.BB" = "Pooled ROC curve - Bayesian bootstrap", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.kernel" = "Pooled ROC curve - Kernel-based", "pooledROC.dpm" = "Pooled ROC curve - Bayesian DPM")
+	method <- switch(class(object)[1], "pooledROC.BB" = "Pooled ROC curve - Bayesian bootstrap", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.kernel" = "Pooled ROC curve - Kernel-based", "pooledROC.dpm" = "Pooled ROC curve - Bayesian DPM")
 	res$method <- method
 	# AUC and pAUC
 	auc_aauc <- "Area under the pooled ROC curve"
@@ -24,8 +24,8 @@ function(object, ...) {
 		res$pAUC <- legend.text
 	}
 
-	if(class(object)[2] == "pooledROC.kernel") {
-		m <- matrix(ncol = 2, nrow = 1, dimnames = list(c("Bandwidths:"), c("Healthy", "Diseased")))
+	if(class(object)[1] == "pooledROC.kernel") {
+		m <- matrix(ncol = 2, nrow = 1, dimnames = list(c("Bandwidths:"), c("Group H", "Group D")))
 		m[1,] <- c(sprintf("%.3f", object$bws$h), sprintf("%.3f", object$bws$d))
 		res$bws <- m
 		res$bw <- paste0("\nBandwidth Selection Method: ", switch(object$bw, "SRT" = "Silverman's rule-of-thumb", "UCV" = "Unbiased cross-validation"))
@@ -36,7 +36,7 @@ function(object, ...) {
 	dic  <- any(class(object) %in% "pooledROC.dpm") & !is.null(object$DIC)
 
 	if(waic | lpml | dic) {
-		col.names <- c("Healthy", "Diseased")
+		col.names <- c("Group H", "Group D")
 		row.names <- NULL
 		m <- matrix(ncol = length(col.names), nrow = ifelse(waic, 2, 0) + ifelse(lpml, 1, 0) + ifelse(dic, 2, 0))
 		i <- 1
@@ -60,7 +60,7 @@ function(object, ...) {
 		rownames(m) <- row.names
 		res$bmsc <- m
 	}
-	m <- matrix(ncol = 2, nrow = 2, dimnames = list(c("Number of observations", "Number of missing data"), c("Healthy", "Diseased")))
+	m <- matrix(ncol = 2, nrow = 2, dimnames = list(c("Number of observations", "Number of missing data"), c("Group H", "Group D")))
 	m[1,] <- c(sprintf("%.0f", length(object$marker$h)), sprintf("%.0f", length(object$marker$d)))
 	m[2,] <- c(sprintf("%.0f", sum(object$missing.ind$h)), sprintf("%.0f", sum(object$missing.ind$d)))
 	res$sz <- m

@@ -3,7 +3,7 @@ function(x, main = NULL, ...) {
 	dots <- list(...)
 
 	main.roc <- if(is.null(main)) {
-        switch(class(x)[2], "pooledROC.BB" = "Pooled ROC curve - Bayesian bootstrap", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.kernel" = "Pooled ROC curve - Kernel-based", "pooledROC.dpm" = "Pooled ROC curve - Bayesian DPM")
+        switch(class(x)[1], "pooledROC.BB" = "Pooled ROC curve - Bayesian bootstrap", "pooledROC.emp" = "Pooled ROC curve - Empirical", "pooledROC.kernel" = "Pooled ROC curve - Kernel-based", "pooledROC.dpm" = "Pooled ROC curve - Bayesian DPM")
     } else {
         main
     }

@@ -5,7 +5,7 @@
 Simulated endocrine data.
 }
 \description{
-The \code{endosyn} data set was simulated based on the data analyzed in Rodriguez-Alvarez et al. (2011a,b) and Inacio de Carvalho and Rodriguez-Alvarez (2018); and presented in Botana et al. (2007) and Tome et al. (2008). The aim of these studies was to use the Body Mass Index (BMI) to detect patients having a higher risk of cardiovascular problems, ascertaining the possible effect of age and gender on the accuracy of this measure.
+The \code{endosyn} data set was simulated based on the data analysed in Rodriguez-Alvarez et al. (2011a,b) and Inacio de Carvalho and Rodriguez-Alvarez (2018); and presented in Botana et al. (2007) and Tome et al. (2008). The aim of these studies was to use the body mass index (BMI) to detect patients having a higher risk of cardiovascular problems, ascertaining the possible effect of age and gender on the accuracy of this measure.
 }
 \usage{data("endosyn")}
 \format{

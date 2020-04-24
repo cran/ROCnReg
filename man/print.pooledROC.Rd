@@ -11,8 +11,8 @@ Default print method for objects fitted with \code{pooledROC.BB}, \code{pooledRO
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{an object of class \code{pooledROC} as produced by \code{pooledROC.BB}, \code{pooledROC.emp}, \code{pooledROC.kernel} or \code{pooledROC.dpm} functions.}
-  \item{\dots}{further arguments passed to or from other methods. Not yet implemented.}
+  \item{x}{An object of class \code{pooledROC} as produced by \code{pooledROC.BB}, \code{pooledROC.emp}, \code{pooledROC.kernel} or \code{pooledROC.dpm} functions.}
+  \item{\dots}{Further arguments passed to or from other methods. Not yet implemented.}
 }
 \details{
 A short summary is printed including the area under the pooled ROC curve (AUC).
@@ -49,7 +49,7 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
 m0_emp <- pooledROC.emp(marker = "l_marker1", group = "status",
-tag.healthy = 0, data = newpsa, p = seq(0,1,l=101), B = 500)
+tag.h = 0, data = newpsa, p = seq(0,1,l=101), B = 500)
 
 summary(m0_emp)
 
@@ -57,7 +57,7 @@ plot(m0_emp)
 }
 \dontshow{
 m0_emp <- pooledROC.emp(marker = "l_marker1", group = "status",
-tag.healthy = 0, data = newpsa, p = seq(0,1,l=101), B = 0)
+tag.h = 0, data = newpsa, p = seq(0,1,l=101), B = 0)
 
 summary(m0_emp)
 

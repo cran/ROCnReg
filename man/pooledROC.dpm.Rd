@@ -8,7 +8,7 @@ Nonparametric Bayesian inference of the pooled ROC curve
 This function estimates the pooled ROC curve using a Dirichlet process mixture of normals model as proposed by Erkanli et al. (2006).
 }
 \usage{
-pooledROC.dpm(marker, group, tag.healthy, data, 
+pooledROC.dpm(marker, group, tag.h, data, 
   standardise = TRUE, p = seq(0, 1, l = 101),
   compute.lpml = FALSE, compute.WAIC = FALSE, compute.DIC = FALSE, 
   pauc = pauccontrol(), density = densitycontrol(), 
@@ -19,14 +19,14 @@ pooledROC.dpm(marker, group, tag.healthy, data,
 \arguments{
   \item{marker}{A character string with the name of the diagnostic test variable.}
   \item{group}{A character string with the name of the variable that distinguishes healthy from diseased individuals.}
-  \item{tag.healthy}{The value codifying healthy individuals in the variable \code{group}.}
+  \item{tag.h}{The value codifying healthy individuals in the variable \code{group}.}
   \item{data}{Data frame representing the data and containing all needed variables.}
-  \item{standardise}{A logical value. If TRUE the test outcomes are standardised (so that the resulting test outcomes have mean zero and standard deviation of one).) The default is TRUE.}
+  \item{standardise}{A logical value. If TRUE the test outcomes are standardised (so that the resulting test outcomes have mean zero and standard deviation of one). The default is TRUE.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve. This set is also used to compute the area under the ROC curve (AUC) using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{compute.lpml}{A logical value. If TRUE, the log pseudo marginal likelihood (LPML, Geisser and Eddy, 1979) and the conditional predictive ordinates (CPO) are computed.}
   \item{compute.WAIC}{A logical value. If TRUE, the widely applicable information criterion (WAIC, Gelman et al., 2014; Watanabe, 2010) is computed.}
   \item{compute.DIC}{A logical value. If TRUE, the deviance information criterion is computed.}
-   \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF)..}
+   \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
    \item{density}{A list of control values to replace the default values returned by the function \code{\link{densitycontrol}}. This argument is used to indicate whether the densities of the marker in the healthy and diseased population should be computed, and in case it is to be computed, at which grid of test outcomes in each of the populations.}
   \item{prior.h}{Hyparameter specification for the healthy population. A list of control values to replace the default values returned by the function \code{\link{priorcontrol.dpm}}. See \code{\link{priorcontrol.dpm}} for details.}
   \item{prior.d}{Hyparameter specification for the diseased population. A list of control values to replace the default values returned by the function \code{\link{priorcontrol.dpm}}. See \code{\link{priorcontrol.dpm}} for details.}
@@ -46,7 +46,7 @@ where \eqn{L_{d}} is pre-specified is a pre-specified upper bound on the number 
 The area under the curve is 
 \deqn{AUC=\int_{0}^{1}ROC(p)dp.} 
 When the upper bound on the number of mixture components is 1, i.e., \eqn{L_d = 1} (\eqn{d \in \{D, \bar{D}\}}), there is a closed-form expression for the AUC (binormal model), which is used in the package. In contrast, when \eqn{L_D > 1} or \eqn{L_{\bar{D}} > 1}, the AUC is computed using results presented in Erkanli et al. (2006). With regard to the partial area under the curve, when \code{focus = "FPF"} and assuming an upper bound \eqn{u_1} for the FPF, what it is computed is \deqn{pAUC_{FPF}(u_1)=\int_0^{u_1} ROC(p)dp.} 
-As for the AUC, when \eqn{L_d = 1} (\eqn{d \in \{D, \bar{D}\}}) there is a closed-form expression for the \eqn{pAUC_{FPF}} (Hillis and Metz, 2012), and when \eqn{L_D > 1} or \eqn{L_{\bar{D}} > 1} the integral is approximated numerically using Simpson's rule. The returned value is the normalised pAUC, \eqn{pAUC_{FPF}(u_1)/u_1} so that it ranges from \eqn{u_1/2} (useless test) to 1 (perfect marker). Conversely, when \code{focus = "TPF"}, and assuming a lower bound for the TPF of \eqn{u_2}, the partial area corresponding to TPFs lying in the interval \eqn{(u_2,1)} is computed as \deqn{pAUC_{TPF}(u_2)=\int_{u_2}^{1}ROC_{TNF}(p)dp,} where \eqn{ROC_{TNF}(p)} is a \eqn{270^\circ} rotation of the ROC curve, and it can be expressed as \eqn{ROC_{TNF}(p) = F_{\bar{D}}\{F_{D}^{-1}(1-p)\}.} Again, when \eqn{L_d = 1} (\eqn{d \in \{D, \bar{D}\}}) there is a closed-form expression for the \eqn{pAUC_{TNF}} (Hillis and Metz, 2012), and when \eqn{L_D > 1} or \eqn{L_{\bar{D}} > 1} the integral is approximated numerically using Simpson's rule. The returned value is the normalised pAUC, \eqn{pAUC_{TPF}(u_2)/(1-u_2)}, so that it ranges from \eqn{(1-u_2)/2} (useless test) to 1 (perfect test).
+As for the AUC, when \eqn{L_d = 1} (\eqn{d \in \{D, \bar{D}\}}), there is a closed-form expression for the \eqn{pAUC_{FPF}} (Hillis and Metz, 2012), and when \eqn{L_D > 1} or \eqn{L_{\bar{D}} > 1} the integral is approximated numerically using Simpson's rule. The returned value is the normalised pAUC, \eqn{pAUC_{FPF}(u_1)/u_1} so that it ranges from \eqn{u_1/2} (useless test) to 1 (perfect marker). Conversely, when \code{focus = "TPF"}, and assuming a lower bound for the TPF of \eqn{u_2}, the partial area corresponding to TPFs lying in the interval \eqn{(u_2,1)} is computed as \deqn{pAUC_{TPF}(u_2)=\int_{u_2}^{1}ROC_{TNF}(p)dp,} where \eqn{ROC_{TNF}(p)} is a \eqn{270^\circ} rotation of the ROC curve, and it can be expressed as \eqn{ROC_{TNF}(p) = F_{\bar{D}}\{F_{D}^{-1}(1-p)\}.} Again, when \eqn{L_d = 1} (\eqn{d \in \{D, \bar{D}\}}), there is a closed-form expression for the \eqn{pAUC_{TNF}} (Hillis and Metz, 2012), and when \eqn{L_D > 1} or \eqn{L_{\bar{D}} > 1} the integral is approximated numerically using Simpson's rule. The returned value is the normalised pAUC, \eqn{pAUC_{TPF}(u_2)/(1-u_2)}, so that it ranges from \eqn{(1-u_2)/2} (useless test) to 1 (perfect test).
 
 It is worth referring that with respect to the computation of the DIC, when \eqn{L=1}, it is computed as in Spiegelhalter et al. (2002), and when \eqn{L>1}, DIC3 as described in Celeux et al. (2006) is computed. Also, for the computation of the conditional predictive ordinates (CPO) we follow the stable version proposed by Gelman et al. (2014).
 }
@@ -99,7 +99,7 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
 m0_dpm <- pooledROC.dpm(marker = "l_marker1", group = "status",
-            tag.healthy = 0, data = newpsa, standardise = TRUE, 
+            tag.h = 0, data = newpsa, standardise = TRUE, 
             p = seq(0,1,l=101), compute.WAIC = TRUE, compute.lpml = TRUE, 
             compute.DIC = TRUE, 
             prior.h = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 
@@ -114,7 +114,7 @@ plot(m0_dpm)
 }
 \dontshow{
 m0_dpm <- pooledROC.dpm(marker = "l_marker1", group = "status",
-            tag.healthy = 0, data = newpsa, standardise = TRUE, 
+            tag.h = 0, data = newpsa, standardise = TRUE, 
             p = seq(0,1,l=101), compute.WAIC = FALSE, compute.lpml = FALSE, 
             compute.DIC = FALSE, 
             prior.h = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 

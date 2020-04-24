@@ -7,14 +7,14 @@ Bayesian bootstrap estimation of the pooled ROC curve.
 This function estimates the pooled ROC curve using the Bayesian bootstrap estimator proposed by Gu et al. (2008).
 }
 \usage{
-pooledROC.BB(marker, group, tag.healthy, data, 
+pooledROC.BB(marker, group, tag.h, data, 
 	p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol())
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{marker}{A character string with the name of the diagnostic test variable.}
   \item{group}{A character string with the name of the variable that distinguishes healthy from diseased individuals.}
-  \item{tag.healthy}{The value codifying healthy individuals in the variable \code{group}.}
+  \item{tag.h}{The value codifying healthy individuals in the variable \code{group}.}
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve.}
   \item{B}{An integer value specifying the number of Bayesian bootstrap resamples. By default 5000.}
@@ -28,7 +28,7 @@ where
 \deqn{F_{\bar{D}}(y) = Pr(Y_{\bar{D}} \leq y).}
 The method implemented in this function makes use of the equivalence (see Gu et al., 2008)
 \deqn{ROC(p) = 1 - F_{D}\{F_{\bar{D}}^{-1}(1-p)\} = 1 - Pr(1 - F_{\bar{D}}(Y_D) \leq p),}
-and estimates both \eqn{F_{\bar{D}}} and the outer probability using the Bayesian bootstrap. 
+and estimates both \eqn{F_{\bar{D}}} and the outer probability using the Bayesian bootstrap resampling distribution. 
 
 Regarding the area under the curve, we note that
 \deqn{AUC = \int_{0}^{1}ROC(p)dp = 1 - E\{U_D\},}
@@ -49,7 +49,7 @@ As a result, the function provides a list with the following components:
 \item{p}{Set of false positive fractions (FPF) at which the pooled ROC curve has been estimated.}
 \item{ROC}{Estimated pooled ROC curve, and corresponding 95\% pointwise credible band.}
 \item{AUC}{Estimated pooled AUC, and corresponding 95\% credible interval.}
-\item{pAUC}{If computed, estimated partial area under the pooled ROC curve (posterior mean) and 95\% pointwise credible band. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
+\item{pAUC}{If computed, estimated partial area under the pooled ROC curve (posterior mean) and 95\% credible interval. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 \item{weights}{list with the Dirichlet weights (involved in the estimation) in the healthy (h) and diseased (d) groups. These are matrices of dimension n0 x B and n1 x B, where n0 is the number of healthy individuals and n1 is the number of diseased individuals. }
 }
 \references{
@@ -77,7 +77,7 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
 m0_BB <- pooledROC.BB(marker = "l_marker1", group = "status",
-tag.healthy = 0, data = newpsa, p = seq(0,1,l=101), B = 5000)
+tag.h = 0, data = newpsa, p = seq(0,1,l=101), B = 5000)
 
 summary(m0_BB)
 
@@ -85,7 +85,7 @@ plot(m0_BB)
 }
 \dontshow{
 m0_BB <- pooledROC.BB(marker = "l_marker1", group = "status",
-tag.healthy = 0, data = newpsa, p = seq(0,1,l=101), B = 500)
+tag.h = 0, data = newpsa, p = seq(0,1,l=101), B = 500)
 
 summary(m0_BB)
 

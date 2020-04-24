@@ -1,18 +1,12 @@
 AROC.sp <-
-function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
-    compute.ROC <- function(formula.healthy, group, tag.healthy, data, est.cdf.h, pauc, p = seq(0,1,l = 101)) {
-        data.h <- data[data[,group] == tag.healthy,]
-        data.d <- data[data[,group] != tag.healthy,]
-        
-        n0 <- nrow(data.h)
-        n1 <- nrow(data.d)
-        
+function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
+    compute.AROC <- function(formula.h, data.h, data.d, est.cdf.h, pauc, p = seq(0,1,l = 101)) {
         np <- length(p)
         
-        marker <- all.vars(formula.healthy)[1]
+        marker <- all.vars(formula.h)[1]
         
         # Fit the model in the healthy population
-        fit0p <- lm(formula = formula.healthy, data = data.h)
+        fit0p <- lm(formula = formula.h, data = data.h)
         sigma0p <- summary(fit0p)$sigma
         pre.placement.values <- (data.d[,marker] - predict(fit0p, newdata = data.d))/sigma0p
         
@@ -25,23 +19,12 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
             u1 <- 1 - F0res(pre.placement.values)
         }
         # Compute the AROC
-        #arocp <- numeric(np)
-        #for(i in 1:np){
-        #    arocp[i] <- sum(u1<=p[i])/n1
-        #}
         arocp <- apply(outer(u1, p, "<="), 2, mean)
-        #aarocp <- simpson(arocp, p)
-        #aarocp <- mean(outer(res0p, pre.placement.values, "<="))
         aarocp <- 1 - mean(u1)
         if(pauc$compute){
             if(pauc$focus == "FPF"){
                 pu <- seq(0, pauc$value, len = np)
-                #arocp_pauc <- numeric(np)
-                #for(i in 1:np){
-                #    arocp_pauc[i] <- sum(u1<=pu[i])/n1
-                #}
                 arocp_pauc <- apply(outer(u1, pu, "<="), 2, mean)
-                #aarocp_pauc <- simpson(arocp_pauc, pu)
                 aarocp_pauc <- pauc$value - mean(pmin(pauc$value, u1))
             } else{
                 arocp[1] <- 0
@@ -61,17 +44,15 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
             res$pAUC <- aarocp_pauc
         }
         res$fit <- fit0p
-        res$data.h <- data.h
-        res$data.d <- data.d
         res
     }
     est.cdf.h <- match.arg(est.cdf.h)
     np <- length(p)
-    if(inherits(formula.healthy, "character")) {
-        formula.healthy <- as.formula(formula.healthy)
+    if(inherits(formula.h, "character")) {
+        formula.h <- as.formula(formula.h)
     }
     # Marker variable
-    tf <- terms.formula(formula.healthy, specials = c("f"))
+    tf <- terms.formula(formula.h)
     if (attr(tf, "response") > 0) {
         marker <- as.character(attr(tf, "variables")[2])
     } else {
@@ -79,7 +60,7 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
     }
     
     # Variables in the model
-    names.cov <- all.vars(formula.healthy)[-1]
+    names.cov <- all.vars(formula.h)[-1]
     
     if(sum(is.na(match(c(marker, names.cov, group), names(data)))))
     stop("Not all needed variables are supplied in data")
@@ -90,12 +71,14 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
     
     # New data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
-    omit.h <- apply(data.new[data.new[,group] == tag.healthy, c(marker, group, names.cov)], 1, anyNA)
-    omit.d <- apply(data.new[data.new[,group] != tag.healthy, c(marker, group, names.cov)], 1, anyNA)
+    omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, names.cov)], 1, anyNA)
+    omit.d <- apply(data.new[data.new[,group] != tag.h, c(marker, group, names.cov)], 1, anyNA)
     
-    data.new <- rbind(data.new[data.new[,group] == tag.healthy,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.healthy,,drop = FALSE][!omit.d,,drop = FALSE])
-    
-    res.fit <- compute.ROC(formula.healthy = formula.healthy, group = group, tag.healthy = tag.healthy, data = data.new, est.cdf.h = est.cdf.h, pauc = pauc, p = p)
+    data.new <- rbind(data.new[data.new[,group] == tag.h,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.h,,drop = FALSE][!omit.d,,drop = FALSE])
+    data.new.h <- data.new[data.new[,group] == tag.h,]
+    data.new.d <- data.new[data.new[,group] != tag.h,]
+
+    res.fit <- compute.AROC(formula.h = formula.h, data.h = data.new.h, data.d = data.new.d, est.cdf.h = est.cdf.h, pauc = pauc, p = p)
     arocp  <- res.fit$ROC
     aarocp <- res.fit$AUC
     coeffp <- coefficients(res.fit$fit)
@@ -114,13 +97,12 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
         
         for(l in 1:B) {
             # Another option: healthy (residuals) - diseased (original sample)
-            data.boot.d <- res.fit$data.d[sample(nrow(res.fit$data.d), replace=TRUE),]
-            data.boot.h <- res.fit$data.h
+            data.boot.d <- data.new.d[sample(nrow(data.new.d), replace=TRUE),]
+            data.boot.h <- data.new.h
             res.h.b <- sample(res.fit$fit$residuals, replace = TRUE)
             data.boot.h[,marker] <- res.fit$fit$fitted + res.h.b
-            data.boot <- rbind(data.boot.d, data.boot.h)
             
-            res.boot <- compute.ROC(formula.healthy = formula.healthy, group = group, tag.healthy = tag.healthy, data = data.boot, est.cdf.h = est.cdf.h, pauc = pauc, p = p)
+            res.boot <- compute.AROC(formula.h = formula.h, data.h = data.boot.h, data.d = data.boot.d, est.cdf.h = est.cdf.h, pauc = pauc, p = p)
             arocpb[,l] <- res.boot$ROC
             aarocpb[l] <- res.boot$AUC
             coeffpb[,l] <-  coefficients(res.boot$fit)
@@ -163,8 +145,8 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$marker <- marker
     res$group <- group
-    res$tag.healthy <- tag.healthy
-    res$formula <- formula.healthy
+    res$tag.h <- tag.h
+    res$formula <- formula.h
     res$est.cdf.h <- est.cdf.h
     res$p <- p
     res$ROC <- AROC
@@ -180,6 +162,6 @@ function(formula.healthy, group, tag.healthy, data, est.cdf.h = c("normal", "emp
     }
     res$fit <- res.fit$fit
     res$coeff <- coeff
-    class(res) <- c("AROC","AROC.sp")
+    class(res) <- c("AROC.sp", "AROC")
     res
 }

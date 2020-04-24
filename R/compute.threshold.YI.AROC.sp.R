@@ -1,7 +1,7 @@
 compute.threshold.YI.AROC.sp <-
 function(object, newdata) {
-  if(class(object)[2] != "AROC.sp") {
-    stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+  if(class(object)[1] != "AROC.sp") {
+    stop(paste0("This function can not be used for this object class: ", class(object)[1]))
   }
   names.cov <- all.vars(object$formula)[-1]
   if(!missing(newdata) && !inherits(newdata, "data.frame"))
@@ -20,7 +20,7 @@ function(object, newdata) {
 
   # Compute the AROC
   sigma0 <- summary(object$fit)$sigma
-  data.d <- (object$data[object$data[,object$group] != object$tag.healthy,])[!object$missing.ind$d,]
+  data.d <- (object$data[object$data[,object$group] != object$tag.h,])[!object$missing.ind$d,]
   n1 <- nrow(data.d)
   pre.placement.values <- (data.d[,object$marker] - predict(object$fit, newdata = data.d))/sigma0
 

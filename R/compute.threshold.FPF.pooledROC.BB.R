@@ -1,7 +1,7 @@
 compute.threshold.FPF.pooledROC.BB <-
 function(object, FPF = 0.5) {
-	if(class(object)[2] != "pooledROC.BB") {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+	if(class(object)[1] != "pooledROC.BB") {
+		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}
 	B <- ncol(object$weights$h)
 

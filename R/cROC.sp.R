@@ -1,26 +1,23 @@
 cROC.sp <-
-function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, est.cdf = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
+function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
     
     pauc <- do.call("pauccontrol", pauc)
     
-    compute.ROC <- function(formula.healthy, formula.diseased, group, tag.healthy, data, newdata, est.cdf, pauc, p = seq(0,1,l = 101)) {
-        data.h <- data[data[,group] == tag.healthy,]
-        data.d <- data[data[,group] != tag.healthy,]
-        
+    compute.ROC <- function(formula.h, formula.d, data.h, data.d, newdata, est.cdf, pauc, p = seq(0,1,l = 101)) {        
         n0 <- nrow(data.h)
         n1 <- nrow(data.d)
         
         np <- length(p)
         
-        marker <- all.vars(formula.healthy)[1]
+        marker <- all.vars(formula.h)[1]
         
         # Fit the model in the healthy population
-        fit0p <- lm(formula = formula.healthy, data = data.h)
+        fit0p <- lm(formula = formula.h, data = data.h)
         sigma0p <- summary(fit0p)$sigma
         
         
         # Fit the model in the diseased population
-        fit1p <- lm(formula = formula.diseased, data = data.d)
+        fit1p <- lm(formula = formula.d, data = data.d)
         sigma1p <- summary(fit1p)$sigma
 
         # Coefficients ROC curve
@@ -39,39 +36,17 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
         
         if(est.cdf == "normal") {
             cROC <- 1 - apply(a + outer(rep(b, nrow(newdata)), qnorm(1-p), "*"), c(1,2), pnorm)
-            #cAUC <- apply(cROC, 1, simpson, set.p = p)
             # Binormal model
             cAUC <- 1 - pnorm(a/sqrt(1+b^2))
 			if(pauc$compute){
-				if(pauc$focus == "FPF"){
-					#pu <- seq(0, pauc$value, len = np)
-					#cROC_pauc <- 1 - apply(a + outer(rep(b, nrow(newdata)), qnorm(1-pu), "*"), c(1,2), pnorm)
-					#cpAUC <- apply(cROC_pauc, 1, simpson, set.p = pu)
+				if(pauc$focus == "FPF"){					
                     cpAUC <- pbivnorm(-a/sqrt(1+b^2), qnorm(pauc$value), -b/sqrt(1+b^2))
 				} else{
-					#a <- (predict(fit1p, newdata = newdata) - predict(fit0p, newdata = newdata))/sigma0p
-					#b <- sigma1p/sigma0p
-					#pu <- seq(pauc$value, 1, len = np)
-					#cROC_pauc <- apply(a + outer(rep(b, nrow(newdata)), qnorm(1-pu), "*"), c(1,2), pnorm)
-					#cpAUC <- apply(cROC_pauc, 1, simpson, set.p = pu)
                     cpAUC <- pbivnorm(-a/sqrt(1+b^2), qnorm(1-pauc$value), -1/sqrt(1+b^2))
 				}
 			}
 
-        } else {
-            #res0p <- fit0p$residuals/sigma0p
-            #F0res <- ecdf(res0p)
-            
-            #res1p <- fit1p$residuals/sigma1p
-            #F1res <- ecdf(res1p)
-            
-            #cdf0 <- apply(outer(res0p, res0p, "<="), 2, mean)
-            #cdf0_inv <- apply(outer(cdf0, 1-p, ">="), 2, function(x, z) {
-            #        res <- min(z[x]) #min(c(z[x], max(z)))
-            #        res
-            #    }, z = res0p)
-            #cdf0_inv <- replace(cdf0_inv, is.infinite(cdf0_inv), max(res0p))
-            
+        } else {            
             res0p <- fit0p$residuals/sigma0p
             res1p <- fit1p$residuals/sigma1p
             F1res <- ecdf(res1p)
@@ -104,8 +79,6 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
         if(pauc$compute){   
             res$pAUC <- cpAUC
         }
-        res$data.h <- data.h
-        res$data.d <- data.d
         res$fit <- list(h = fit0p, d = fit1p)
         res$coeff <- list(h = coefficients(fit0p), d = coefficients(fit1p), ROC = beta.ROC)
         res
@@ -121,33 +94,35 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
         }
     }
 
-    if(inherits(formula.healthy, "character")) {
-        formula.healthy <- as.formula(formula.healthy)
+    if(inherits(formula.h, "character")) {
+        formula.h <- as.formula(formula.h)
     }
-    if(inherits(formula.diseased, "character")) {
-        formula.diseased <- as.formula(formula.diseased)
+    if(inherits(formula.d, "character")) {
+        formula.d <- as.formula(formula.d)
     }
     # Marker variable
-    tf <- terms.formula(formula.healthy, specials = c("f"))
+    tf <- terms.formula(formula.h)
     if (attr(tf, "response") > 0) {
         marker.h <- as.character(attr(tf, "variables")[2])
     } else {
-        stop("The 'formula.healthy' should include the response variable (left hand side)")
+        stop("The 'formula.h' should include the response variable (left hand side)")
     }
     
-    tf <- terms.formula(formula.diseased, specials = c("f"))
+    tf <- terms.formula(formula.d)
     if (attr(tf, "response") > 0) {
         marker.d <- as.character(attr(tf, "variables")[2])
     } else {
-        stop("The 'formula.healthy' should include the response variable (left hand side)")
+        stop("The 'formula.h' should include the response variable (left hand side)")
     }
     
+     if(marker.h != marker.d) {
+        stop("The response variable (biomarker) in 'formula.h' and 'formula.d' should be the same")
+    }
     marker <- marker.h
-    
+
     # Variables in the model
-    # Variables in the model
-    names.cov.h <- all.vars(formula.healthy)[-1]
-    names.cov.d <- all.vars(formula.diseased)[-1]
+    names.cov.h <- all.vars(formula.h)[-1]
+    names.cov.d <- all.vars(formula.d)[-1]
     names.cov <- c(names.cov.h, names.cov.d[is.na(match(names.cov.d, names.cov.h))])
     
     if(!missing(newdata) && !inherits(newdata, "data.frame"))
@@ -161,11 +136,13 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
     
     # Data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
-    omit.h <- apply(data.new[data.new[,group] == tag.healthy, c(marker, group, names.cov)], 1, anyNA)
-    omit.d <- apply(data.new[data.new[,group] != tag.healthy, c(marker, group, names.cov)], 1, anyNA)
+    omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, names.cov)], 1, anyNA)
+    omit.d <- apply(data.new[data.new[,group] != tag.h, c(marker, group, names.cov)], 1, anyNA)
     
-    data.new <- rbind(data.new[data.new[,group] == tag.healthy,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.healthy,,drop = FALSE][!omit.d,,drop = FALSE])
-    
+    data.new <- rbind(data.new[data.new[,group] == tag.h,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.h,,drop = FALSE][!omit.d,,drop = FALSE])
+    data.new.h <- data.new[data.new[,group] == tag.h,]
+    data.new.d <- data.new[data.new[,group] != tag.h,]    
+
     # New data (for predictions)
     if(missing(newdata)) {
         newdata <- cROCData(data.new, names.cov, group)
@@ -173,7 +150,7 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
         newdata <- na.omit(newdata[,names.cov,drop=FALSE])
     }
     
-    res.fit <- compute.ROC(formula.healthy = formula.healthy, formula.diseased = formula.diseased, group = group, tag.healthy = tag.healthy, data = data.new, newdata  = newdata, est.cdf = est.cdf, pauc = pauc, p = p)
+    res.fit <- compute.ROC(formula.h = formula.h, formula.d = formula.d, data.h = data.new.h, data.d = data.new.d, newdata  = newdata, est.cdf = est.cdf, pauc = pauc, p = p)
     crocp <- res.fit$ROC
     caucp <- res.fit$AUC
     if(pauc$compute){
@@ -194,8 +171,8 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
         ccoeff1b <- matrix(0, nrow = length(coeff1p), ncol = B)
         ccoeffROCb <- matrix(0, nrow = length(coeffROCp), ncol = B)
         for(l in 1:B) {
-            data.boot.d <- res.fit$data.d
-            data.boot.h <- res.fit$data.h
+            data.boot.d <- data.new.d
+            data.boot.h <- data.new.h
             
             res.h.b <- sample(res.fit$fit$h$residuals, replace = TRUE)
             res.d.b <- sample(res.fit$fit$d$residuals, replace = TRUE)
@@ -203,9 +180,8 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
             data.boot.h[,marker] <- res.fit$fit$h$fitted + res.h.b
             data.boot.d[,marker] <- res.fit$fit$d$fitted + res.d.b
             
-            data.boot <- rbind(data.boot.d, data.boot.h)
+            res.boot <- compute.ROC(formula.h = formula.h, formula.d = formula.d, data.h = data.boot.h, data.d = data.boot.d, newdata = newdata, est.cdf = est.cdf, pauc = pauc, p = p)
             
-            res.boot <- compute.ROC(formula.healthy = formula.healthy, formula.diseased = formula.diseased, group = group, tag.healthy = tag.healthy, data = data.boot, newdata = newdata, est.cdf = est.cdf, pauc = pauc, p = p)
             crocpb[,,l] <- res.boot$ROC
             caucb[,l] <- res.boot$AUC
             if(pauc$compute){
@@ -273,8 +249,8 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$marker <- marker
     res$group <- group
-    res$tag.healthy <- tag.healthy
-    res$formula <- list(h = formula.healthy, d = formula.diseased)
+    res$tag.h <- tag.h
+    res$formula <- list(h = formula.h, d = formula.d)
     res$est.cdf <- est.cdf
     res$ci.fit <- ifelse(B, TRUE, FALSE)
     res$p <- p
@@ -291,6 +267,6 @@ function(formula.healthy, formula.diseased, group, tag.healthy, data,  newdata, 
     }
     res$fit <- res.fit$fit
     res$coeff <- list(h = ccoeff0res, d = ccoeff1res, ROC = ccoeffROCres)
-    class(res) <- c("cROC","cROC.sp")
+    class(res) <- c("cROC.sp", "cROC")
     res
 }

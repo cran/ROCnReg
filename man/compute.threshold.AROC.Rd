@@ -12,13 +12,13 @@ compute.threshold.AROC(object, criterion = c("FPF", "YI"), FPF, newdata)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{object}{An object of class \code{AROC} as produced by \code{AROC.bnp()}, \code{AROC.sp()} or \code{AROC.kernel()}.}
+  \item{object}{An object of class \code{AROC} as produced by \code{AROC.bnp()}, \code{AROC.sp()}, or \code{AROC.kernel()}.}
   \item{criterion}{A character string indicating whether the covariate-adjusted threshold values should be computed based on the Youden index (``YI'') or for a fixed set of false positive fractions (``FPF'').}
   \item{FPF}{For criterion = FPF, a numeric vector with the FPF at which to calculate the AROC-based threshold values. Atomic values are also valid.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the AROC-based threshold values will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
 }
 \details{
-Estimates AROC-based threshold values based on two different criteria, the Youden Index (YI) and the one that gives rise to a pre-specified FPF. Before proceding, we would like to mention that when the accuracy of a test is not affected by covariates, this does not necessarily imply that the covariate-specific ROC curve (which in this case is the same for all covariate values) coincides with the pooled ROC curve. It does coincide, however, with the AROC curve. Consequently, in all cases where covariates affect the test, even though they might not affect its discriminatory capacity, inferences based on the pooled ROC curve might be misleading. In such cases the AROC curve should be used instead. This also applies to the selection of (optimal) threshold values, which, as will be seen, might be covariate-specific (i.e., possibly different for different covariate values).
+Estimates AROC-based threshold values based on two different criteria, namely, the Youden index (YI) and the one that gives rise to a pre-specified FPF. Before proceeding, we would like to mention that when the accuracy of a test is not affected by covariates, this does not necessarily imply that the covariate-specific ROC curve (which in this case is the same for all covariate values) coincides with the pooled ROC curve. It does coincide, however, with the AROC curve. Consequently, in all cases where covariates affect the test, even though they might not affect its discriminatory capacity, inferences based on the pooled ROC curve might be misleading. In such cases the AROC curve should be used instead. This also applies to the selection of (optimal) threshold values, which, as will be seen, might be covariate-specific (i.e., possibly different for different covariate values).
 
 For the AROC curve, the Youden Index is defined as
 \deqn{YI = \max_{p}\{AROC(p) - p\},}
@@ -66,9 +66,9 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 # Log-transform the biomarker
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
-AROC_bnp <- AROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
+AROC_bnp <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               group = "status", 
-              tag.healthy = 0, 
+              tag.h = 0, 
               data = newpsa,
               standardise = TRUE,
               p = seq(0,1,l=101),
@@ -101,9 +101,9 @@ lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"ql"], lty 
 
 }
 \dontshow{
-AROC_bnp <- AROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
+AROC_bnp <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               group = "status", 
-              tag.healthy = 0, 
+              tag.h = 0, 
               data = newpsa,
               standardise = TRUE,
               p = seq(0,1,l=101),

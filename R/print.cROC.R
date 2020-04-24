@@ -1,6 +1,6 @@
 print.cROC <-
 function(x, ...) {
-	method <- switch(class(x)[2], "cROC.kernel" = "Conditional ROC curve - Kernel-based", 
+	method <- switch(class(x)[1], "cROC.kernel" = "Conditional ROC curve - Kernel-based", 
 								  "cROC.bnp" = "Conditional ROC curve - Bayesian nonparametric", 
 								  "cROC.bsp" = "Conditional ROC curve - Bayesian semiparametric", 
 								  "cROC.sp" = "Conditional ROC curve - semiparametric")

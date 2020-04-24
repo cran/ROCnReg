@@ -1,11 +1,11 @@
 pooledROC.BB <-
-function(marker, group, tag.healthy, data, p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol()) {
+function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol()) {
     
     pauc <- do.call("pauccontrol", pauc)
     
     # Obtain the marker in healthy and diseased
-    yh <- data[,marker][data[,group] == tag.healthy]
-    yd <- data[,marker][data[,group] != tag.healthy]
+    yh <- data[,marker][data[,group] == tag.h]
+    yd <- data[,marker][data[,group] != tag.h]
     
     # Missing data
     omit.h <- is.na(yh)
@@ -82,6 +82,6 @@ function(marker, group, tag.healthy, data, p = seq(0, 1, l = 101), B = 5000, pau
         attr(res$pAUC, "value") <- pauc$value
         attr(res$pAUC, "focus") <- pauc$focus
     }	
-    class(res) <- c("pooledROC","pooledROC.BB")
+    class(res) <- c("pooledROC.BB", "pooledROC")
     return(res)
 }

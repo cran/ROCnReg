@@ -4,14 +4,14 @@
 Summary method for \code{AROC} objects
 }
 \description{
-Default summary method for objects fitted with \code{AROC.bnp()}, \code{AROC.sp()} or \code{AROC.kernel()} functions.
+Default summary method for objects fitted with \code{AROC.bnp()}, \code{AROC.sp()}, or \code{AROC.kernel()} functions.
 }
 \usage{
 \method{summary}{AROC}(object, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{object}{an object of class \code{AROC} as produced by \code{AROC.bnp()}, \code{AROC.sp()} or \code{AROC.kernel()}}
+  \item{object}{An object of class \code{AROC} as produced by \code{AROC.bnp()}, \code{AROC.sp()}, or \code{AROC.kernel()}.}
   \item{\dots}{Further arguments passed to or from other methods. Not yet implemented.}
 }
 \details{
@@ -49,15 +49,15 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 # Log-transform the biomarker
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
-m0 <- AROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
-group = "status", tag.healthy = 0, data = newpsa, standardise = TRUE,
+m0 <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
+group = "status", tag.h = 0, data = newpsa, standardise = TRUE,
 p = seq(0,1,l=101), compute.lpml = TRUE, compute.WAIC = TRUE)
 
 summary(m0)
 }
 \dontshow{
-m0 <- AROC.bnp(formula.healthy = l_marker1 ~ f(age, K = 0),
-group = "status", tag.healthy = 0, data = newpsa, standardise = TRUE,
+m0 <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
+group = "status", tag.h = 0, data = newpsa, standardise = TRUE,
 p = seq(0,1,l=101), compute.lpml = FALSE, compute.WAIC = FALSE,
 mcmc = list(nsave = 400, nburn = 100, nskip = 1))
 

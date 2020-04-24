@@ -1,8 +1,8 @@
 compute.threshold.AROC <-
 function(object, criterion = c("FPF", "YI"), FPF, newdata) {
-	object.class <- class(object)[2]
+	object.class <- class(object)[1]
 	if (!(object.class %in% c("AROC.bnp", "AROC.kernel", "AROC.sp"))) {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+		stop(paste0("This function can not be used for this object class: ", class(object)))
 	}
 
 	criterion <- match.arg(criterion)

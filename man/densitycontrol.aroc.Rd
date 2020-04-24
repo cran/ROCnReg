@@ -13,7 +13,7 @@ densitycontrol.aroc(compute = FALSE, grid.h = NA, newdata = NA)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{compute}{Logical value. If TRUE the conditional densities of test outcomes in the healthy group are estimated.}
-  \item{grid.h}{Grid of test outcomes in the healthy group where the (conditional) density (densities) estimates are to be evaluated. Value \code{NA} signals autoinitialization, with default a vector of length 200 in the range of test outcomes in the healthy group.}
+  \item{grid.h}{Grid of test outcomes in the healthy group where the conditional density estimates are to be evaluated. Value \code{NA} signals autoinitialization, with default a vector of length 200 in the range of test outcomes in the healthy group.}
   \item{newdata}{Data frame containing the values of the covariates at which the conditional density estimates are computed.}
 }
 \details{
@@ -51,9 +51,9 @@ agep <- seq(min(newpsa$age), max(newpsa$age), length = 5)
 df.pred <- data.frame(age = agep)
 
 \donttest{
-AROC_bnp <- AROC.bnp(formula.healthy =  l_marker1 ~ f(age, K = 0),
+AROC_bnp <- AROC.bnp(formula.h =  l_marker1 ~ f(age, K = 0),
                      group = "status", 
-                     tag.healthy = 0,
+                     tag.h = 0,
                      data = newpsa,
                      standardise = TRUE,
                      p = seq(0, 1, len = 101),
@@ -66,9 +66,9 @@ AROC_bnp <- AROC.bnp(formula.healthy =  l_marker1 ~ f(age, K = 0),
 )
 }
 \dontshow{
-AROC_bnp <- AROC.bnp(formula.healthy =  l_marker1 ~ f(age, K = 0),
+AROC_bnp <- AROC.bnp(formula.h =  l_marker1 ~ f(age, K = 0),
                      group = "status", 
-                     tag.healthy = 0,
+                     tag.h = 0,
                      data = newpsa,
                      standardise = TRUE,
                      p = seq(0, 1, len = 101),

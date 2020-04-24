@@ -12,15 +12,15 @@ The dataset contains 71 prostate cases and 71 controls who participated in a lun
   A data frame with 683 observations on the following 6 variables.
   \describe{
     \item{\code{id}}{Patient identifier.}
-    \item{\code{marker1}}{total prostate specific antigen (PSA).}
-    \item{\code{marker2}}{free prostate specific antigen (PSA)}
-    \item{\code{status}}{presence/absence of prostate cancer. The non-cancer patients are controls matched to cases on age and number of serum samples available for analysis (see Details).}
-    \item{\code{age}}{patient age at blood draw (serum sample).}
-    \item{\code{t}}{time (years) relative to prostate cancer diagnosis.}
+    \item{\code{marker1}}{Total prostate specific antigen (PSA).}
+    \item{\code{marker2}}{Free prostate specific antigen (PSA)}
+    \item{\code{status}}{Presence/absence of prostate cancer. The non-cancer patients are controls matched to cases on age and number of serum samples available for analysis (see Details).}
+    \item{\code{age}}{Patient age at blood draw (serum sample).}
+    \item{\code{t}}{Time (years) relative to prostate cancer diagnosis.}
   }
 }
 \details{
-The CARET enrolled 12000 men, aged 50 and 65, at high risk of lung cancer. For each subject on the study, serum samples were drawn at baseline and at two-year intervals after that. The data presented here represent a subsample of the original sample, and it was reported by Etzioni et al. (1999). It contains 71 cases of prostate cancer occurred during the study. All these cases had, at least, three and up to eight serum samples. As far as controls are concerned, they were selected from the participants of the CARET verifying that had not been diagnosed with prostate cancer by the time of the original study, and the selection was done by matching to cases on date of birth and number of serum samples available for analysis.
+The CARET enrolled 12000 men, aged between 50 and 65 years, at high risk of lung cancer. For each subject on the study, serum samples were drawn at baseline and at two-year intervals after that. The data presented here represent a subsample of the original sample, and it was reported by Etzioni et al. (1999). It contains 71 cases of prostate cancer that occurred during the study. All these cases had, at least, three and up to eight serum samples. As far as controls are concerned, they were selected from the participants of the CARET study verifying that they had not been diagnosed with prostate cancer by the time of the original study, and the selection was done by matching to cases on date of birth and number of serum samples available for analysis.
 }
 \source{
 The dataset can be downloaded from \url{https://research.fhcrc.org/diagnostic-biomarkers-center/en/datasets.html}.

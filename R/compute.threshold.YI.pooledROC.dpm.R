@@ -1,7 +1,7 @@
 compute.threshold.YI.pooledROC.dpm <-
 function(object) {
-    if(class(object)[2] != "pooledROC.dpm") {
-        stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+    if(class(object)[1] != "pooledROC.dpm") {
+        stop(paste0("This function can not be used for this object class: ", class(object)[1]))
     }
     
     y0 <- object$marker$h[!object$missing.ind$h]

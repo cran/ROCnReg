@@ -1,7 +1,7 @@
 compute.threshold.FPF.cROC.kernel <-
 function(object, newdata, FPF = 0.5) {
-	if(class(object)[2] != "cROC.kernel") {
-		stop(paste0("This function cannot be used for this object class: ", class(object)[2]))
+	if(class(object)[1] != "cROC.kernel") {
+		stop(paste0("This function cannot be used for this object class: ", class(object)[1]))
 	}
 	# Newdata
 	names.cov <- object$covariate

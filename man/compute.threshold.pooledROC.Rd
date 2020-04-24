@@ -12,12 +12,12 @@ compute.threshold.pooledROC(object, criterion = c("FPF", "YI"), FPF)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{object}{An object of class \code{pooledROC} as produced by \code{\link{pooledROC.BB}}, \code{\link{pooledROC.emp}}, \code{\link{pooledROC.kernel}} or \code{\link{pooledROC.dpm}} functions.}
+  \item{object}{An object of class \code{pooledROC} as produced by \code{\link{pooledROC.BB}}, \code{\link{pooledROC.emp}}, \code{\link{pooledROC.kernel}}, or \code{\link{pooledROC.dpm}} functions.}
   \item{criterion}{A character string indicating if the threshold value should be computed based on the Youden index (``YI''), or for fixed false positive fractions (``FPF''). }
   \item{FPF}{For \code{criterion = "FPF"}, a numeric vector with the FPF at which to calculate the threshold values. Atomic values are also valid.}
 }
 \details{
-Estimates pooled ROC-based threshold values based on two different criteria, the Youden Index (YI) and the one that gives rise to a pre-specified FPF.
+Estimates pooled ROC-based threshold values based on two different criteria, namely, the Youden index (YI) and the one that gives rise to a pre-specified FPF.
 
 The Youden Index is defined as
 \deqn{YI = \max_{c}\{TPF(c) - FPF(c)\} = \max_{c}\{F_{\bar{D}}(c) - F_{D}(c)\},}
@@ -30,10 +30,10 @@ The value \eqn{c^{*}} that achieves the maximum is called the optimal YI thresho
 \value{
 As a result, the function provides a list with the following components:
 \item{call}{The matched call.}
-\item{threshold}{If method = "YI", the estimated (optimal) threshold corresponding to the Youden index (the one that maximises TPF/sensitivity + TNF/specificity) and if method = "FPF", the estimated threshold corresponding to the specified FPF. For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), and in both cases, in addition to the posterior mean, the 95\% pointwise credible band is also returned.}
-\item{YI}{If method = "YI", the estimated Youden index. For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), in addition to the posterior mean, the 95\% pointwise credible band is also returned.}
-\item{FPF}{If method = "YI",  the FPF corresponding to the estimated (optimal) threshold (For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), in addition to the posterior mean, the 95\% pointwise credible band is also returned). If method = "FPF", the supplied FPF argument.}
-\item{TPF}{The TPF/sensitivity corresponding to the estimated (optimal) threshold. For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), in addition to the posterior mean, the 95\% pointwise credible band is also returned.}
+\item{threshold}{If method = "YI", the estimated (optimal) threshold corresponding to the Youden index (the one that maximises TPF/sensitivity + TNF/specificity) and if method = "FPF", the estimated threshold corresponding to the specified FPF. For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), and in both cases, in addition to the posterior mean, the 95\% credible interval is also returned.}
+\item{YI}{If method = "YI", the estimated Youden index. For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), in addition to the posterior mean, the 95\% credible interval is also returned.}
+\item{FPF}{If method = "YI",  the FPF corresponding to the estimated (optimal) threshold (For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), in addition to the posterior mean, the 95\% credible interval is also returned). If method = "FPF", the supplied FPF argument.}
+\item{TPF}{The TPF/sensitivity corresponding to the estimated (optimal) threshold. For the Bayesian approaches (\code{pooledROC.dpm} and \code{pooledROC.BB}), in addition to the posterior mean, the 95\% credible interval is also returned.}
 }
 \references{
 Rutter, C.M. and Miglioretti, D. L. (2003). Estimating the Accuracy of Psychological Scales Using Longitudinal Data. Biostatistics, \bold{4}, 97--107.
@@ -61,7 +61,7 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 newpsa$l_marker1 <- log(newpsa$marker1)
 \donttest{
 m0_dpm <- pooledROC.dpm(marker = "l_marker1", group = "status",
-            tag.healthy = 0, data = newpsa, standardise = TRUE, 
+            tag.h = 0, data = newpsa, standardise = TRUE, 
             p = seq(0,1,l=101), compute.WAIC = TRUE, compute.lpml = TRUE, 
             compute.DIC = TRUE, 
             prior.h = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 
@@ -84,7 +84,7 @@ th_m0_dpm_fpf$threshold
 }
 \dontshow{
 m0_dpm <- pooledROC.dpm(marker = "l_marker1", group = "status",
-            tag.healthy = 0, data = newpsa, standardise = TRUE,  
+            tag.h = 0, data = newpsa, standardise = TRUE,  
             p = seq(0,1,l=101), compute.WAIC = FALSE, compute.lpml = FALSE, 
             compute.DIC = FALSE, 
             prior.h = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 

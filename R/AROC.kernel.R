@@ -1,8 +1,8 @@
 AROC.kernel <-
-function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c("LC","LL"), pauc = pauccontrol(), data, p = seq(0,1,l = 101), B = 1000) {
-    compute.ROC <- function(marker, covariate, group, tag.healthy, bw, regtype, pauc, data, p = seq(0,1,l = 101)) {
-        data.h <- data[data[,group] == tag.healthy,]
-        data.d <- data[data[,group] != tag.healthy,]
+function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), pauc = pauccontrol(), data, p = seq(0,1,l = 101), B = 1000) {
+    compute.ROC <- function(marker, covariate, group, tag.h, bw, regtype, pauc, data, p = seq(0,1,l = 101)) {
+        data.h <- data[data[,group] == tag.h,]
+        data.d <- data[data[,group] != tag.h,]
         
         n0 <- nrow(data.h)
         n1 <- nrow(data.d)
@@ -79,12 +79,12 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
     
     # New data, removing missing values
     data.new <- data[,c(marker,group,covariate)]
-    omit.h <- apply(data.new[data.new[,group] == tag.healthy, c(marker, group, covariate)], 1, anyNA)
-    omit.d <- apply(data.new[data.new[,group] != tag.healthy, c(marker, group, covariate)], 1, anyNA)
+    omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, covariate)], 1, anyNA)
+    omit.d <- apply(data.new[data.new[,group] != tag.h, c(marker, group, covariate)], 1, anyNA)
     
-    data.new <- rbind(data.new[data.new[,group] == tag.healthy,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.healthy,,drop = FALSE][!omit.d,,drop = FALSE])
+    data.new <- rbind(data.new[data.new[,group] == tag.h,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.h,,drop = FALSE][!omit.d,,drop = FALSE])
     
-    croc <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.healthy = tag.healthy, bw = bw.aux, regtype = regtype.aux, pauc = pauc, data = data.new, p = p)
+    croc <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, data = data.new, p = p)
     arocp <- croc$ROC
     aarocp <- croc$AUC
     if(pauc$compute){
@@ -104,7 +104,7 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
             data.boot.h[,marker] <-croc$fit$fit.mean$mean + sqrt(croc$fit$fit.var$mean)*res.h.b
             data.boot <- rbind(data.boot.d, data.boot.h)
             
-            res.boot <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.healthy = tag.healthy, bw = bw.aux, regtype = regtype.aux, pauc = pauc, data = data.boot, p = p)
+            res.boot <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, data = data.boot, p = p)
             arocpb[,l] <- res.boot$ROC
             aarocpb[l] <- res.boot$AUC
             if(pauc$compute){
@@ -140,7 +140,7 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
     res$marker <- marker
     res$covariate <- covariate
     res$group <- group
-    res$tag.healthy <- tag.healthy
+    res$tag.h <- tag.h
     res$p <- p
     res$ROC <- poolROC
     res$AUC <- AUC
@@ -154,6 +154,6 @@ function(marker, covariate, group, tag.healthy, bw = c("LS","AIC"), regtype = c(
         attr(res$pAUC, "focus") <- pauc$focus
     }
     res$fit <- croc$fit
-    class(res) <- c("AROC","AROC.kernel")
+    class(res) <- c("AROC.kernel", "AROC")
     res
 }

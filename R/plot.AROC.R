@@ -3,7 +3,7 @@ function(x, main = NULL, ...) {
     dots <- list(...)
 
 	main.roc <- if(is.null(main)) {
-        switch(class(x)[2], "AROC.kernel" = "AROC Kernel-based", "AROC.bnp" = "AROC Bayesian nonparametric", "AROC.sp" = "AROC semiparametric")
+        switch(class(x)[1], "AROC.kernel" = "AROC Kernel-based", "AROC.bnp" = "AROC Bayesian nonparametric", "AROC.sp" = "AROC semiparametric")
     } else {
         main
     }

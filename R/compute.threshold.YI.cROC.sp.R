@@ -1,7 +1,7 @@
 compute.threshold.YI.cROC.sp <-
 function(object, newdata) {
-  if(class(object)[2] != "cROC.sp") {
-    stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+  if(class(object)[1] != "cROC.sp") {
+    stop(paste0("This function can not be used for this object class: ", class(object)[1]))
   }
   names.cov.h <- all.vars(object$formula$h)[-1]
   names.cov.d <- all.vars(object$formula$d)[-1]
@@ -26,8 +26,8 @@ function(object, newdata) {
   
   npred <- nrow(newdata)
   
-  y0 <- (object$data[object$data[,object$group] == object$tag.healthy,])[!object$missing.ind$h,object$marker]
-  y1 <- (object$data[object$data[,object$group] != object$tag.healthy,])[!object$missing.ind$d,object$marker]
+  y0 <- (object$data[object$data[,object$group] == object$tag.h,])[!object$missing.ind$h,object$marker]
+  y1 <- (object$data[object$data[,object$group] != object$tag.h,])[!object$missing.ind$d,object$marker]
 
   n0 <- length(y0)
   n1 <- length(y1)

@@ -1,9 +1,9 @@
 predictive.checks.helper <-
-function(y, yrep, statistics, devnew, group = c("diseased", "nondiseased"), ndensity = NULL) {
+function(y, yrep, marker, statistics, devnew, group = c("D", "H"), ndensity = NULL) {
 	group <- match.arg(group)
-	main.stat <- paste0(statistics, " (", group, " group)")
-	main.hist <- paste0("Density", " (", group, " group)")
-	xlab.hist <- paste0("Diagnostic test outcome ", "(", group, " group)")
+	main.stat <- paste0(statistics, " (Group ", group, ")")
+	main.hist <- paste0("Density (Group ", group, ")")
+	xlab.hist <- paste0(marker, " (Group ", group, ")")
 
 	nrep <- ncol(yrep)
 

@@ -1,5 +1,5 @@
 print.summary.cROC <-
-function(x,...) {
+function(x, digits = max(3L, getOption("digits") - 3L), ...) {
 	cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")
 	cat(paste0("\nApproach: ", x$method))
 	cat("\n----------------------------------------------------------")
@@ -20,14 +20,15 @@ function(x,...) {
 	}
 	if(!is.null(x$sp.coeff)) {
 		cat("\n\nParametric coefficients")
-		cat("\nHealthy:\n")
-		print(x$sp.coeff$h, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
-
-		cat("\n\nDiseased:\n")
-		print(x$sp.coeff$d, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
-
+		cat("\nGroup H:\n")
+		#print(x$sp.coeff$h, quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
+		print(format(round(x$sp.coeff$h, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
+		cat("\n\nGroup D:\n")
+		#print(x$sp.coeff$d, quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
+		print(format(round(x$sp.coeff$d, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
 		cat("\n\nROC curve:\n")
-		print(x$sp.coeff$ROC, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
+		#print(x$sp.coeff$ROC, quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
+		print(format(round(x$sp.coeff$ROC, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
 	}
 	if(!is.null(x$sp.msc)) {
 		cat("\n\nModel selection criteria:\n")
@@ -36,14 +37,14 @@ function(x,...) {
 
 	if(!is.null(x$bnp.coeff)) {
 		cat("\n\nParametric coefficients")
-		cat("\nHealthy:\n")
-		print(x$bnp.coeff$h, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
+		cat("\nGroup H:\n")
+		print(format(round(x$bnp.coeff$h, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
 
-		cat("\n\nDiseased:\n")
-		print(x$bnp.coeff$d, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
+		cat("\n\nGroup D:\n")
+		print(format(round(x$bnp.coeff$d, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
 
 		cat("\n\nROC curve:\n")
-		print(x$bnp.coeff$ROC, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
+		print(format(round(x$bnp.coeff$ROC, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
 	}
 	if(!is.null(x$bmsc)) {
 		cat("\n\nModel selection criteria:\n")

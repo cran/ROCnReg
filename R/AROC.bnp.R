@@ -1,7 +1,7 @@
 AROC.bnp <-
-function(formula.healthy,
+function(formula.h,
 group,
-tag.healthy,
+tag.h,
 data,
 standardise = TRUE,
 p = seq(0,1,l = 101),
@@ -10,19 +10,19 @@ compute.WAIC = FALSE,
 compute.DIC = FALSE,
 pauc = pauccontrol(),
 density = densitycontrol.aroc(),
-prior = priorcontrol.bnp(),
+prior.h = priorcontrol.bnp(),
 mcmc = mcmccontrol()) {
     
     pauc <- do.call("pauccontrol", pauc)    
     density <- do.call("densitycontrol.aroc", density)
     mcmc <- do.call("mcmccontrol", mcmc)
-    prior <- do.call("priorcontrol.bnp", prior)
+    prior.h <- do.call("priorcontrol.bnp", prior.h)
     
-    if(inherits(formula.healthy, "character")) {
-        formula.healthy <- as.formula(formula.healthy)
+    if(inherits(formula.h, "character")) {
+        formula.h <- as.formula(formula.h)
     }
     # Marker variable
-    tf <- terms.formula(formula.healthy, specials = c("f"))
+    tf <- terms.formula(formula.h, specials = c("f"))
     if (attr(tf, "response") > 0) {
         marker <- as.character(attr(tf, "variables")[2])
     } else {
@@ -30,7 +30,7 @@ mcmc = mcmccontrol()) {
     }
     
     # Variables in the model
-    names.cov <- all.vars(formula.healthy)[-1]
+    names.cov <- all.vars(formula.h)[-1]
     
     if(sum(is.na(match(c(marker, names.cov, group), names(data)))))
         stop("Not all needed variables are supplied in data")
@@ -39,42 +39,46 @@ mcmc = mcmccontrol()) {
     
     # New data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
-    omit.h <- apply(data.new[data.new[,group] == tag.healthy, c(marker, group, names.cov)], 1, anyNA)
-    omit.d <- apply(data.new[data.new[,group] != tag.healthy, c(marker, group, names.cov)], 1, anyNA)
+    omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, names.cov)], 1, anyNA)
+    omit.d <- apply(data.new[data.new[,group] != tag.h, c(marker, group, names.cov)], 1, anyNA)
     
-    data.new <- rbind(data.new[data.new[,group] == tag.healthy,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.healthy,,drop = FALSE][!omit.d,,drop = FALSE])
+    data.new <- rbind(data.new[data.new[,group] == tag.h,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.h,,drop = FALSE][!omit.d,,drop = FALSE])
     
     
-    data.h <- data.new[data.new[,group] == tag.healthy,]
-    data.d <- data.new[data.new[,group] != tag.healthy,]
+    data.h <- data.new[data.new[,group] == tag.h,]
+    data.d <- data.new[data.new[,group] != tag.h,]
     
     n0 <- nrow(data.h)
     n1 <- nrow(data.d)
     np <- length(p)
     
     # Construct design matrix
-    MM0 <- design.matrix.bnp(formula.healthy, data.h, standardise)
+    MM0 <- design.matrix.bnp(formula.h, data.h, standardise)
     X0 <- MM0$X
     
     # Construct design matrix in diseased population (based on healthy)
     X1 <- predict(MM0, data.d)$X
     k <-  ncol(X0)
     
+    data.h.marker <- data.h[,marker]
+    data.d.marker <- data.d[,marker]
+
     # Getting OLS estimates
-    coefs.h <- solve(t(X0) %*% X0) %*% t(X0) %*% data.h[,marker]
-    var.h <- sum((data.h[,marker] - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
-    cov.h <- solve(t(X0) %*% X0)*var.h
+    res <- ols.function(X0, data.h.marker, vcov = TRUE)
+    coefs.h <- res$coeff
+    var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
+    cov.h <- res$vcov*var.h
     
     # Hyperparameters
-    L <- prior$L
-    m0 <- prior$m0
-    S0 <- prior$S0
-    nu <- prior$nu
-    Psi <- prior$Psi
-    a <- prior$a
-    b <- prior$b
-    aalpha <- prior$aalpha
-    balpha <- prior$balpha
+    L <- prior.h$L
+    m0 <- prior.h$m0
+    S0 <- prior.h$S0
+    nu <- prior.h$nu
+    Psi <- prior.h$Psi
+    a <- prior.h$a
+    b <- prior.h$b
+    aalpha <- prior.h$aalpha
+    balpha <- prior.h$balpha
 
     if(is.na(L)) {
         L <- 10 
@@ -154,7 +158,7 @@ mcmc = mcmccontrol()) {
     }
     
     if(L > 1){
-        res0 <- bddp(y = data.h[,marker],
+        res0 <- bddp(y = data.h.marker,
         X = X0,
         prior = list(m0 = m0,
         S0 = S0,
@@ -170,7 +174,7 @@ mcmc = mcmccontrol()) {
     }
     
     if(L == 1){
-        res0 <- regnth(y = data.h[,marker],
+        res0 <- regnth(y = data.h.marker,
         X = X0,
         prior = list(m0 = m0,
         S0 = S0,
@@ -184,7 +188,7 @@ mcmc = mcmccontrol()) {
     
     nsimf <- mcmc$nsave
     
-    y1 <- data.d[,marker]
+    y1 <- data.d.marker
     
     if(L > 1){
         prob <- res0$P
@@ -201,7 +205,8 @@ mcmc = mcmccontrol()) {
         udddp <- matrix(0, nrow = n1, ncol = nsimf)
         
         for(l in 1:nsimf) {
-            udddp[,l] <- 1 - apply(t(prob[l,]*t(pnorm(y1, mean = X1%*%t(beta[l,,]), sd = rep(sd[l,], each = length(y1))))),1, sum)
+            #udddp[,l] <- 1 - apply(t(prob[l,]*t(pnorm(y1, mean = X1%*%t(beta[l,,]), sd = rep(sd[l,], each = length(y1))))),1, sum)
+            udddp[,l] <- 1 - apply(t(prob[l,]*t(pnorm(y1, mean = tcrossprod(X1, beta[l,,]), sd = rep(sd[l,], each = length(y1))))),1, sum)
         }
         weights <- matrix(0, nrow = n1, ncol = nsimf)
         for(l in 1:nsimf) {
@@ -241,7 +246,7 @@ mcmc = mcmccontrol()) {
     if(L == 1){
         up <- matrix(0, nrow = n1, ncol = nsimf)
         for(k in 1:nsimf) {
-            up[,k] = 1 - pnorm(data.d[,marker], mean = X1%*%beta[k,], sd = sd[k])
+            up[,k] = 1 - pnorm(data.d.marker, mean = X1%*%beta[k,], sd = sd[k])
         }
         
         weights <- matrix(0, nrow = n1, ncol = nsimf)
@@ -303,7 +308,7 @@ mcmc = mcmccontrol()) {
         npred <- nrow(newdata)
         
         if(all(is.na(density$grid.h))) {
-            grid.h <- seq(min(data.h[,marker]) - 1, max(data.h[,marker]) + 1, len = 200)
+            grid.h <- seq(min(data.h.marker) - 1, max(data.h.marker) + 1, len = 200)
         } else {
             grid.h <- density$grid.h
         }
@@ -320,7 +325,7 @@ mcmc = mcmccontrol()) {
                 }
             }
             if(L > 1){
-                mu.h <- X0p%*%t(beta[k,,])
+                mu.h <- tcrossprod(X0p, beta[k,,]) #X0p%*%t(beta[k,,])
                 for(l in 1:npred){
                     aux0 <- norMix(mu = c(mu.h[l,]), sigma = sd[k,], w = prob[k,])
                     dens.h[, k, l] <- dnorMix(grid.h, aux0)
@@ -340,7 +345,7 @@ mcmc = mcmccontrol()) {
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$marker <- marker
     res$group <- group
-    res$tag.healthy <- tag.healthy
+    res$tag.h <- tag.h
     res$p <- p
     res$mcmc <- mcmc
     if(L > 1){
@@ -382,44 +387,44 @@ mcmc = mcmccontrol()) {
         res$dens <- list(grid = grid.h, dens = dens.h)
     }
     if(compute.lpml | compute.WAIC | compute.DIC) {
-        term <- inf_criteria(y = data.h[,marker], X = X0, res = res0)
+        term <- inf_criteria(y = data.h.marker, X = X0, res = res0)
     }
     
     if(compute.lpml) {
         if(L > 1){
-            res$lpml <- lpml(y = data.h[,marker], X = X0, res = res0, L = L, termsum = term)
+            res$lpml <- lpml(y = data.h.marker, X = X0, res = res0, L = L, termsum = term)
         }
         if(L == 1){
-            res$lpml <- lpmlp(y = data.h[,marker], X = X0, res = res0, term = term)
+            res$lpml <- lpmlp(y = data.h.marker, X = X0, res = res0, term = term)
         }
     }
     
     if(compute.WAIC) {
         if(L > 1){
-            res$WAIC <- waicnp(y = data.h[,marker], X = X0, res = res0, L = L, termsum = term)
+            res$WAIC <- waicnp(y = data.h.marker, X = X0, res = res0, L = L, termsum = term)
         }
         if(L == 1){
-            res$WAIC <- waicp(y = data.h[,marker], X = X0, res = res0, term = term)
+            res$WAIC <- waicp(y = data.h.marker, X = X0, res = res0, term = term)
         }
     }
     
     if(compute.DIC) {
         if(L > 1){
-            res$DIC <- dic(y = data.h[,marker], X = X0, res = res0, L = L, termsum = term)
+            res$DIC <- dic(y = data.h.marker, X = X0, res = res0, L = L, termsum = term)
         }
         if(L == 1){
-            res$DIC <- dicp(y = data.h[,marker], X = X0, res = res0, term = term)
+            res$DIC <- dicp(y = data.h.marker, X = X0, res = res0, term = term)
         }
     }
     
     # Results of the fit in the healthy population (neeeded to calculate predictive checks or other statistics)
     if(L > 1){
-        res$fit <- list(formula = formula.healthy, mm = MM0, beta = beta, sd = sd, probs = prob)
+        res$fit <- list(formula = formula.h, mm = MM0, beta = beta, sd = sd, probs = prob)
     }
     if(L == 1){
-        res$fit <- list(formula = formula.healthy, mm = MM0, beta = beta, sd = sd)
+        res$fit <- list(formula = formula.h, mm = MM0, beta = beta, sd = sd)
     }
-    res$data_model <- list(y = list(h = data.h[,marker], d = data.d[,marker]), X = list(h = X0, d = X1))
-    class(res) <- c("AROC","AROC.bnp")
+    res$data_model <- list(y = list(h = data.h.marker, d = data.d.marker), X = list(h = X0, d = X1))
+    class(res) <- c("AROC.bnp", "AROC")
     res
 }

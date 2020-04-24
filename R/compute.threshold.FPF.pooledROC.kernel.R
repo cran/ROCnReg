@@ -1,7 +1,7 @@
 compute.threshold.FPF.pooledROC.kernel <-
 function(object, FPF = 0.5) {
-	if(class(object)[2] != "pooledROC.kernel") {
-		stop(paste0("This function can not be used for this object class: ", class(object)[2]))
+	if(class(object)[1] != "pooledROC.kernel") {
+		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}
 	thresholds <- TPF <- vector(length = length(FPF))
 	for(i in 1:length(FPF)) {

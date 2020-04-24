@@ -8,7 +8,7 @@ Nonparametric kernel-based estimation of the covariate-specific ROC curve (cROC)
 This function estimates the covariate-specific ROC curve (cROC) using the nonparametric kernel-based method proposed by Rodriguez-Alvarez et al. (2011). The method, as it stands now, can only deal with one continuous covariate. 
 }
 \usage{
-cROC.kernel(marker, covariate, group, tag.healthy, 
+cROC.kernel(marker, covariate, group, tag.h, 
   bw = c("LS", "AIC"), regtype = c("LC", "LL"), 
   data, newdata, pauc = pauccontrol(),  
   p = seq(0, 1, l = 101), B = 1000)
@@ -18,8 +18,8 @@ cROC.kernel(marker, covariate, group, tag.healthy,
   \item{marker}{A character string with the name of the diagnostic test variable.}
   \item{covariate}{A character string with the name of the continuous covariate.}
   \item{group}{A character string with the name of the variable that distinguishes healthy from diseased individuals.}
-  \item{tag.healthy}{The value codifying healthy individuals in the variable \code{group}.}
-  \item{bw}{A character string specifying which method to use to select bandwidths. AIC specifies expected Kullback-Leibler cross-validation, and LS specifies least-squares cross-validation. Defaults to LS. For details see \code{R}-package \code{\link[np]{np}}.}
+  \item{tag.h}{The value codifying healthy individuals in the variable \code{group}.}
+  \item{bw}{A character string specifying which method to use to select the bandwidths. AIC specifies expected Kullback-Leibler cross-validation, and LS specifies least-squares cross-validation. Defaults to LS. For details see \code{R}-package \code{\link[np]{np}}.}
   \item{regtype}{A character string specifying which type of kernel estimator to use for the regression function (see Details). LC specifies a local-constant estimator (Nadaraya-Watson) and LL specifies a local-linear estimator. Defaults to LC. For details see \code{R}-package \code{\link[np]{np}}.}
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the covariate-specific ROC curve (AUC and pAUC, if computed) will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
@@ -36,9 +36,9 @@ where
 Note that, for the sake of clarity, we assume that the covariate of interest is the same in both healthy and diseased populations. In particular, the method implemented in this function estimates \eqn{F_{D}(\cdot|x)} and \eqn{F_{\bar{D}}(\cdot|x)} assuming a nonparametric location-scale regression model for \eqn{Y} in each population separately, i.e., 
 \deqn{Y_{D} = \mu_{D}(X_{D}) + \sigma_{D}(X_{D})\varepsilon_{D},}
 \deqn{Y_{\bar{D}} = \mu_{\bar{D}}(X_{\bar{D}}) + \sigma_{\bar{D}}(X_{\bar{D}})\varepsilon_{\bar{D}},}
-where \eqn{\mu_{D}(x) = E(Y_D | X_D = x)},  \eqn{\mu_{\bar{D}}(x) = E(Y_{\bar{D}} | X_{\bar{D}} = x)} (regression function), \eqn{\sigma^2_{D}(x) = Var(Y_D | X_D = x)}, \eqn{\sigma^2_{\bar{D}}(x) = Var(Y_{\bar{D}} | X_{\bar{D}} = x)} (variance functions), and \eqn{\varepsilon_{D}} and \eqn{\varepsilon_{\bar{D}}} have zero mean, variance one, and distribution functions \eqn{G_{D}} and \eqn{G_{\bar{D}}}a, respectively. In this case, the covariate-specific ROC curve can be expressed as
+where \eqn{\mu_{D}(x) = E(Y_D | X_D = x)},  \eqn{\mu_{\bar{D}}(x) = E(Y_{\bar{D}} | X_{\bar{D}} = x)} (regression function), \eqn{\sigma^2_{D}(x) = Var(Y_D | X_D = x)}, \eqn{\sigma^2_{\bar{D}}(x) = Var(Y_{\bar{D}} | X_{\bar{D}} = x)} (variance functions), and \eqn{\varepsilon_{D}} and \eqn{\varepsilon_{\bar{D}}} have zero mean, variance one, and distribution functions \eqn{G_{D}} and \eqn{G_{\bar{D}}}, respectively. In this case, the covariate-specific ROC curve can be expressed as
 \deqn{ROC(p|x) = 1 - G_{D}\{a(\mathbf{x}) + b(\mathbf{x})G_{\bar{D}}^{-1}(1-p)\},}
-where \eqn{a(\mathbf{x}) = \frac{\mu_{\bar{D}}(x) - \mu_{D}(x)}{\sigma_{D}(x)}}, \eqn{b(\mathbf{x} = \frac{\sigma_{\bar{D}}(x)}{\sigma_{D}(x)}}, and \eqn{G_{D}} and \eqn{G_{\bar{D}}} are the distribution functions of \eqn{\varepsilon_{D}} and \eqn{\varepsilon_{\bar{D}}}, respectively.
+where \eqn{a(x) = \frac{\mu_{\bar{D}}(x) - \mu_{D}(x)}{\sigma_{D}(x)}}, \eqn{b(x) = \frac{\sigma_{\bar{D}}(x)}{\sigma_{D}(x)}}, and \eqn{G_{D}} and \eqn{G_{\bar{D}}} are the distribution functions of \eqn{\varepsilon_{D}} and \eqn{\varepsilon_{\bar{D}}}, respectively.
 By default, for both the healthy and diseased population, both the regression and variance functions are estimated using the Nadaraya-Watson estimator (LC), and the bandwidth are selected using least-squares cross-validation (LS). Implementation relies on the \code{R}-package \code{\link[np]{np}}. No assumptions are made about \eqn{G_{D}} and \eqn{G_{\bar{D}}}, which are empirically estimated on the basis of standardised residuals. 
 
 The covariate-specific area under the curve is
@@ -58,10 +58,10 @@ As a result, the function provides a list with the following components:
 \item{p}{Set of false positive fractions (FPF) at which the covariate-specific ROC curve has been estimated.}
 \item{marker}{The name of the diagnostic test variable in the dataframe.}
 \item{group}{The value of the argument \code{group} used in the call.}
-\item{tag.healthy}{The value of the argument \code{tag.healthy} used in the call.}
+\item{tag.h}{The value of the argument \code{tag.h} used in the call.}
 \item{covariate}{The value of the argument \code{covariate} used in the call.}
 \item{ROC}{Estimated covariate-specific ROC curve (AROC), and 95\% pointwise confidence band (if computed).}
-\item{AUC}{Estimated area under the covariate-specific ROC curve, and 95\% pointwise confidence intervals (if computed).}
+\item{AUC}{Estimated area under the covariate-specific ROC curve, and 95\% confidence interval (if computed).}
 \item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve and 95\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
 \item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component of the list contains the following information: (1) \code{bw.mean}: An object of class \code{\link[np]{npregbw}} with the selected bandwidth for the nonparametric regression function. For further details, see \code{R}-package \code{\link[np]{np}}. (2) \code{bw.var}: An object of class \code{\link[np]{npregbw}} with the selected bandwidth for the nonparametric variance function. For further details, see  \code{R}-package \code{\link[np]{np}}. (3) \code{fit.mean}: An object of class \code{\link[np]{npreg}} with the nonparametric regression function estimate. For further details, see \code{R}-package \code{\link[np]{np}}. (4) \code{fit.var}: An object of class \code{\link[np]{npreg}} with the nonparametric variance function estimate. For further details, see \code{R}-package \code{\link[np]{np}}.}
 }
@@ -91,7 +91,7 @@ newpsa$l_marker1 <- log(newpsa$marker1)
 cROC_kernel <- cROC.kernel(marker = "l_marker1",
                covariate = "age",
                group = "status", 
-               tag.healthy = 0,
+               tag.h = 0,
                data = newpsa, 
                bw = "LS",
                regtype = "LC",
@@ -107,7 +107,7 @@ summary(cROC_kernel )
 cROC_kernel <- cROC.kernel(marker = "l_marker1",
                covariate = "age",
                group = "status", 
-               tag.healthy = 0,
+               tag.h = 0,
                data = newpsa, 
                bw = "LS",
                regtype = "LC",

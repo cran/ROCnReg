@@ -1,5 +1,5 @@
 print.summary.AROC <-
-function(x,...) {
+function(x, digits = max(3L, getOption("digits") - 3L), ...) {
 	cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")
 	cat(paste0("\nApproach: ", x$method))
 	cat("\n----------------------------------------------\n")
@@ -25,16 +25,17 @@ function(x,...) {
 		cat(attr(x$kernel.varfun, "pckertype"))
 	}
 	if(!is.null(x$sp.coeff)) {
-		cat("\n\nParametric coefficients (Healthy):\n")
-		print(x$sp.coeff, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = 5)
+		cat("\n\nParametric coefficients (Group H):\n")
+		#print(x$sp.coeff, quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = digits)
+		print(format(round(x$sp.coeff, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 4, digits = digits)
 	}
 	if(!is.null(x$sp.msc)) {
 		cat("\n\nModel selection criteria:\n")
 		print(x$sp.msc, quote = FALSE, right = TRUE, na.print = "", print.gap = 5)
 	}
 	if(!is.null(x$bnp.coeff)) {
-		cat("\n\nParametric coefficients (Healthy):\n")
-		print(x$bnp.coeff, quote = FALSE, right = TRUE, na.print = "", print.gap = 5)
+		cat("\n\nParametric coefficients (Group H):\n")
+		print(format(round(x$bnp.coeff, digits), digits = digits), quote = FALSE, right = TRUE, na.print = "", print.gap = 5, digits = digits)
 	}
 	if(!is.null(x$bmsc)) {
 		cat("\n\nModel selection criteria:\n")
