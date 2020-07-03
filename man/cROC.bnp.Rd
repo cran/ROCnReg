@@ -13,7 +13,8 @@ cROC.bnp(formula.h, formula.d, group, tag.h, data,
     compute.lpml = FALSE, compute.WAIC = FALSE, compute.DIC = FALSE, 
     pauc = pauccontrol(), density = densitycontrol(),
     prior.h = priorcontrol.bnp(), prior.d = priorcontrol.bnp(), 
-    mcmc = mcmccontrol()) 
+    mcmc = mcmccontrol(),
+    parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) 
 }
 \arguments{
    \item{formula.h}{A \code{\link[stats]{formula}} object specifying the regression function associated to each component of the single-weights linear dependent Dirichlet process mixture of normals model used to estimate the conditional distribution function of the diagnostic test outcome in the healthy population. Regarding the modelling of continuous covariates, both linear and nonlinear effects are allowed, with nonlinear effects being modelled through B-spline basis expansions (see Note).}
@@ -32,6 +33,9 @@ cROC.bnp(formula.h, formula.d, group, tag.h, data,
   \item{prior.h}{Hyparameter specification for the healthy population. A list of control values to replace the default values returned by the function \code{\link{priorcontrol.bnp}}. See \code{\link{priorcontrol.bnp}} for details.}
   \item{prior.d}{Hyparameter specification for the diseased population.  A list of control values to replace the default values returned by the function \code{\link{priorcontrol.bnp}}. See \code{\link{priorcontrol.bnp}} for details.}
  \item{mcmc}{A list of control values to replace the default values returned by the function \code{\link{mcmccontrol}}. See \code{\link{mcmccontrol}} for details.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
  }
  \details{
 Estimates the covariate-specific ROC curve (cROC) defined as

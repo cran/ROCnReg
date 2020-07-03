@@ -8,7 +8,8 @@ AROC based threshold values.
 This function implements methods for estimating AROC-based threshold values.
 }
 \usage{
-compute.threshold.AROC(object, criterion = c("FPF", "YI"), FPF, newdata)
+compute.threshold.AROC(object, criterion = c("FPF", "YI"), FPF, newdata,
+  parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -16,6 +17,9 @@ compute.threshold.AROC(object, criterion = c("FPF", "YI"), FPF, newdata)
   \item{criterion}{A character string indicating whether the covariate-adjusted threshold values should be computed based on the Youden index (``YI'') or for a fixed set of false positive fractions (``FPF'').}
   \item{FPF}{For criterion = FPF, a numeric vector with the FPF at which to calculate the AROC-based threshold values. Atomic values are also valid.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the AROC-based threshold values will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
 Estimates AROC-based threshold values based on two different criteria, namely, the Youden index (YI) and the one that gives rise to a pre-specified FPF. Before proceeding, we would like to mention that when the accuracy of a test is not affected by covariates, this does not necessarily imply that the covariate-specific ROC curve (which in this case is the same for all covariate values) coincides with the pooled ROC curve. It does coincide, however, with the AROC curve. Consequently, in all cases where covariates affect the test, even though they might not affect its discriminatory capacity, inferences based on the pooled ROC curve might be misleading. In such cases the AROC curve should be used instead. This also applies to the selection of (optimal) threshold values, which, as will be seen, might be covariate-specific (i.e., possibly different for different covariate values).

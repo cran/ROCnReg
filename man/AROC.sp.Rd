@@ -9,7 +9,8 @@ This function estimates the covariate-adjusted ROC curve (AROC) using the semipa
 \usage{
 AROC.sp(formula.h, group, tag.h, data, 
     est.cdf.h = c("normal", "empirical"), pauc = pauccontrol(),
-    p = seq(0, 1, l = 101), B = 1000)
+    p = seq(0, 1, l = 101), B = 1000,
+  	parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -21,6 +22,9 @@ AROC.sp(formula.h, group, tag.h, data,
  \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the covariate-adjusted ROC curve (pAAUC) should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-adjusted ROC curve. This set is also used to compute the area under the covariate-adjusted ROC curve (AAUC) using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
 Estimates the covariate-adjusted ROC curve (AROC) defined as

@@ -8,7 +8,8 @@ This function estimates the pooled ROC curve using the Bayesian bootstrap estima
 }
 \usage{
 pooledROC.BB(marker, group, tag.h, data, 
-	p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol())
+	p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol(),
+  	parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -19,6 +20,9 @@ pooledROC.BB(marker, group, tag.h, data,
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve.}
   \item{B}{An integer value specifying the number of Bayesian bootstrap resamples. By default 5000.}
   \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
 Estimates the pooled ROC curve (ROC) defined as

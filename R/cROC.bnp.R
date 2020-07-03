@@ -14,8 +14,179 @@ pauc = pauccontrol(),
 density = densitycontrol(),
 prior.h = priorcontrol.bnp(),
 prior.d = priorcontrol.bnp(),
-mcmc = mcmccontrol()) {
-    
+mcmc = mcmccontrol(), 
+parallel = c("no", "multicore", "snow"), 
+ncpus = 1, 
+cl = NULL) {
+    doMCMCROC <- function(k, res0, res1, L.h, L.d, Xhp, Xdp, pauc, density, p) {
+        np <- length(p)
+        npred <- nrow(Xhp)
+
+        npred <- nrow(newdata)
+        rocddp <- matrix(0, nrow = np, ncol = npred)
+        aucddp <- vector(length = npred)
+        
+        meanfun.h <- meanfun.d <- vector(length = npred)
+
+        if(pauc$compute) {
+            rocddp_pauc <- matrix(0, nrow = np, ncol = npred)
+            paucddp <- vector(length = npred)
+        }
+
+        if(density$compute){
+            dens.h <- matrix(0, nrow = length(density$grid.h), ncol = npred)
+            dens.d <- matrix(0, nrow = length(density$grid.d), ncol = npred)
+        }
+
+
+        if(L.d == 1 & L.h == 1){
+            mu.h <- Xhp%*%res0$Beta[k,]
+            mu.d <- Xdp%*%res1$Beta[k,]
+            
+            meanfun.d <- mu.d
+            meanfun.h <- mu.h
+            
+            # Binormal model
+            a <- as.vector(mu.h - mu.d)/sqrt(res1$Sigma2[k])
+            b <- sqrt(res0$Sigma2[k])/sqrt(res1$Sigma2[k]) # ROC curve
+            rocddp <- t(1 - apply(a + outer(rep(b, npred), qnorm(1-p), "*"), c(1,2), pnorm))
+            
+            # AUC
+            aucddp <- 1 - pnorm(a/sqrt(1+b^2))
+
+            if(pauc$compute) {                    
+                if(pauc$focus == "FPF") {
+                    paucddp <- pbivnorm(-a/sqrt(1+b^2), qnorm(pauc$value), -b/sqrt(1+b^2))
+                } else {
+                    paucddp <- pbivnorm(-a/sqrt(1+b^2), qnorm(1-pauc$value), -1/sqrt(1+b^2))
+                }
+            }
+
+            for(l in 1:npred){                
+                if(density$compute){
+                    dens.h[,l] <- dnorm(density$grid.h, mean = mu.h[l], sd = sqrt(res0$Sigma2[k]))
+                    dens.d[,l] <- dnorm(density$grid.d, mean = mu.d[l], sd = sqrt(res1$Sigma2[k]))
+                }
+            }
+        }        
+        if(L.d == 1 & L.h > 1) {
+            mu.h <- tcrossprod(Xhp, res0$Beta[k,,])
+            mu.d <- Xdp%*%res1$Beta[k,]
+            meanfun.d <- mu.d
+            
+            for(l in 1:npred) {
+                aux0 <- norMix(mu = c(mu.h[l,]), sigma = sqrt(res0$Sigma2[k,]), w = res0$P[k,])
+                q0 <- qnorMix(1 - p, aux0)
+                rocddp[,l] <- 1 - pnorm(q0, mean = mu.d[l], sd = sqrt(res1$Sigma2[k]))
+                aucddp[l] <- simpson(rocddp[,l], p)
+                meanfun.h[l] = sum(res0$P[k,]*t(mu.h[l,]))
+                
+                if(pauc$compute) {      
+                    if(pauc$focus == "FPF"){
+                        pu <- seq(p[1], pauc$value, len = np)
+                        q0_pauc <- qnorMix(1-pu, aux0)
+                        rocddp_pauc[,l] <- 1 - pnorm(q0_pauc, mean= mu.d[l,], sd = sqrt(res1$Sigma2[k]))
+                        paucddp[l] <- simpson(rocddp_pauc[,l], pu)
+                    } else{
+                        pu <- seq(pauc$value, p[np], len = np)
+                        q1_pauc <- qnorm(1-pu, mean= mu.d[l], sd = sqrt(res1$Sigma2[k]))
+                        rocddp_pauc[,l] <- pnorMix(q1_pauc, aux0)
+                        paucddp[l] <- simpson(rocddp_pauc[,l], pu)
+                    }
+                }
+                
+                if(density$compute){
+                    dens.d[,l] <- dnorm(density$grid.d, mean = mu.d[l], sd = sqrt(res1$Sigma2[k]))
+                    dens.h[,l] <- dnorMix(density$grid.h, aux0)
+                }
+            }
+        }
+        
+        if(L.d > 1 & L.h == 1) {
+            mu.h <- Xhp%*%res0$Beta[k,]
+            mu.d <- tcrossprod(Xdp, res1$Beta[k,,]) #Xdp%*%t(res1$Beta[k,,])
+            meanfun.h <- mu.h
+            
+            for(l in 1:npred) {
+                aux1 <- norMix(mu = c(mu.d[l,]), sigma = sqrt(res1$Sigma2[k,]), w = res1$P[k,])
+                q0 <- qnorm(1-p, mean = mu.h[l], sd = sqrt(res0$Sigma2[k]))
+                rocddp[,l] <- 1 - pnorMix(q0, aux1)
+                aucddp[l] <- simpson(rocddp[,l], p)
+                
+                meanfun.d[l] = sum(res0$P[k,]*t(mu.d[l,]))
+                
+                if(pauc$compute) {
+                    
+                    if(pauc$focus == "FPF"){
+                        pu <- seq(p[1], pauc$value, len = np)
+                        q0_pauc <- qnorm(1-pu, mean = mu.h[l], sd = sqrt(res0$Sigma2[k]))
+                        rocddp_pauc[,l] <- 1 - pnorMix(q0_pauc, aux1)
+                        paucddp[l] <- simpson(rocddp_pauc[,l], pu)
+                    } else{
+                        pu <- seq(pauc$value, p[np], len = np)
+                        q1_pauc <- qnorMix(1-pu, aux1)
+                        rocddp_pauc[,l] <- pnorm(q1_pauc, mean = mu.h[l], sd = sqrt(res0$Sigma2[k]))
+                        paucddp[l] <- simpson(rocddp_pauc[,l], pu)
+                    }
+                }
+                if(density$compute){
+                    dens.h[,l] <- dnorm(density$grid.h, mean = mu.h[l], sd = sqrt(res0$Sigma2[k]))
+                    dens.d[,l] <- dnorMix(density$grid.d, aux1)
+                }
+            }
+        }
+        
+        if(L.d > 1 & L.h > 1) {
+            mu.h <- tcrossprod(Xhp, res0$Beta[k,,])
+            mu.d <- tcrossprod(Xdp, res1$Beta[k,,])
+            
+            for(l in 1:npred) {
+                aux0 <- norMix(mu = c(mu.h[l,]), sigma = sqrt(res0$Sigma2[k,]), w = res0$P[k,])
+                aux1 <- norMix(mu = c(mu.d[l,]), sigma = sqrt(res1$Sigma2[k,]), w = res1$P[k,])
+                
+                q0 <- qnorMix(1-p, aux0)
+                rocddp[,l] <- 1 - pnorMix(q0, aux1)
+                aucddp[l] <- simpson(rocddp[,l], p)
+                
+                meanfun.h[l] <- sum(res0$P[k,]*t(mu.h[l,]))
+                meanfun.d[l] <- sum(res1$P[k,]*t(mu.d[l,]))
+                
+                if(pauc$compute) { 
+                    if(pauc$focus == "FPF"){
+                        pu <- seq(p[1], pauc$value, len = np)
+                        q0_pauc <- qnorMix(1-pu, aux0)
+                        rocddp_pauc[,l] <- 1 - pnorMix(q0_pauc, aux1)
+                        paucddp[l] <- simpson(rocddp_pauc[,l], pu)
+                    } else{
+                        pu <- seq(pauc$value, p[np], len = np)
+                        q1_pauc <- qnorMix(1-pu, aux1)
+                        rocddp_pauc[,l] <- pnorMix(q1_pauc, aux0)
+                        paucddp[l] <- simpson(rocddp_pauc[,l], pu)
+                    }
+                }
+                if(density$compute){
+                    dens.d[,l] <- dnorMix(density$grid.d, aux1)
+                    dens.h[,l] <- dnorMix(density$grid.h, aux0)
+                }
+            }
+        }
+
+        res <- list()
+        res$ROC <- rocddp
+        res$AUC <- aucddp
+        res$meanfun.h <- meanfun.h
+        res$meanfun.d <- meanfun.d
+        if(pauc$compute) {
+            res$pAUC <- paucddp
+        }
+        if(density$compute) {
+            res$dens.h <- dens.h
+            res$dens.d <- dens.d
+        }
+        res
+    }
+    parallel <- match.arg(parallel)
+
     pauc <- do.call("pauccontrol", pauc)
     density <- do.call("densitycontrol", density)
     mcmc <- do.call("mcmccontrol", mcmc)
@@ -30,7 +201,6 @@ mcmc = mcmccontrol()) {
     }
     
     # Marker variable
-     # Marker variable
     tf <- terms.formula(formula.h, specials = c("f"))
     if (attr(tf, "response") > 0) {
         marker.h <- as.character(attr(tf, "variables")[2])
@@ -50,9 +220,10 @@ mcmc = mcmccontrol()) {
     }
 
     marker <- marker.h
+    
     # Variables in the model
-    names.cov.h <- all.vars(formula.h)[-1]
-    names.cov.d <- all.vars(formula.d)[-1]
+    names.cov.h <- get_vars_formula(formula.h) #all.vars(formula.h)[-1]
+    names.cov.d <- get_vars_formula(formula.d) #all.vars(formula.d)[-1]
     names.cov <- c(names.cov.h, names.cov.d[is.na(match(names.cov.d, names.cov.h))])
     
     if(!missing(newdata) && !inherits(newdata, "data.frame"))
@@ -310,7 +481,7 @@ mcmc = mcmccontrol()) {
         standardise = standardise)
     }
     
-    if(L.h >1){
+    if(L.h > 1){
         res0 <- bddp(y = data.h.marker,
         X = X0,
         prior = list(m0 = m0.h,
@@ -350,212 +521,78 @@ mcmc = mcmccontrol()) {
     X0p <- predict(MM0, newdata = newdata)$X
     X1p <- predict(MM1, newdata = newdata)$X
     
-    if(L.h == 1){
-        P0 <- NULL
-        Beta0 <- res0$Beta
-        Sigma0 <- sqrt(res0$Sigma2)
-    }
-    
-    
-    if(L.h > 1){
-        P0 <- res0$P
-        Beta0 <- res0$Beta
-        Sigma0 <- sqrt(res0$Sigma2)
-    }
-    
-    if(L.d == 1){
-        P1 <- NULL
-        Beta1 <- res1$Beta
-        Sigma1 <- sqrt(res1$Sigma2)
-    }
-    
-    if(L.d > 1){
-        P1 <- res1$P
-        Beta1 <- res1$Beta
-        Sigma1 <- sqrt(res1$Sigma2)
-    }
-    
-    niter <- mcmc$nsave
-    
-    npred <- nrow(newdata)
-    rocddp <- array(0, c(np, niter, npred))
-    aucddp <- matrix(0, nrow = niter, ncol = npred)
-    
-    if(pauc$compute) {
-        rocddp_pauc <- array(0, c(np, niter, npred))
-        paucddp <- matrix(0, nrow = niter, ncol = npred)
-    }
-    
     if(density$compute){
         if(all(is.na(density$grid.h))) {
-            grid.h <- seq(min(data.h.marker) - 1, max(data.h.marker) + 1, len = 200)
-        } else {
-            grid.h <- density$grid.h
+            density$grid.h <- seq(min(data.h.marker) - 1, max(data.h.marker) + 1, len = 200)
         }
         
         if(all(is.na(density$grid.d))) {
-            grid.d <- seq(min(data.d.marker) - 1, max(data.d.marker) + 1, len = 200)
-        } else {
-            grid.d <- density$grid.d
-        }            
-        dens.h <- array(0, c(length(grid.h), niter, npred))
-        dens.d <- array(0, c(length(grid.d), niter, npred))
-    }
-    
-    meanfun.h <- meanfun.d <- matrix(0, nrow = npred, ncol = niter)
-    
-    for(k in 1:niter) {
-        if(L.d == 1 & L.h == 1){
-            mu.h <- X0p%*%Beta0[k,]
-            mu.d <- X1p%*%Beta1[k,]
-            
-            meanfun.d[,k] <- mu.d
-            meanfun.h[,k] <- mu.h
-            
-            # Binormal model
-            a <- as.vector(mu.h - mu.d)/Sigma1[k]
-            b <- Sigma0[k]/Sigma1[k]
-            # ROC curve
-            rocddp[,k,] <- t(1 - apply(a + outer(rep(b, npred), qnorm(1-p), "*"), c(1,2), pnorm))
-            # AUC
-            aucddp[k,] <- 1 - pnorm(a/sqrt(1+b^2))
+            density$grid.d <- seq(min(data.d.marker) - 1, max(data.d.marker) + 1, len = 200)
+        }
+    }    
 
-            if(pauc$compute) {                    
-                if(pauc$focus == "FPF") {
-                    paucddp[k,] <- pbivnorm(-a/sqrt(1+b^2), qnorm(pauc$value), -b/sqrt(1+b^2))
-                } else {
-                    paucddp[k,] <- pbivnorm(-a/sqrt(1+b^2), qnorm(1-pauc$value), -1/sqrt(1+b^2))
+
+    if(mcmc$nsave > 0) {
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
+            }
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
+        }
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, Xhp = X0p, Xdp = X1p, pauc = pauc, density = density, p = p, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, Xhp = X0p, Xdp = X1p, pauc = pauc, density = density, p = p)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                        if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, Xhp = X0p, Xdp = X1p, pauc = pauc, density = density, p = p)
+                        }                        
+                    }
                 }
+            } else {
+                lapply(seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, Xhp = X0p, Xdp = X1p, pauc = pauc, density = density, p = p)
             }
 
-            for(l in 1:npred){
-                #q0 <- qnorm(1-p, mean = mu.h[l], sd = Sigma0[k])
-                #rocddp[,k,l] <- 1 - pnorm(q0, mean= mu.d[l], sd = Sigma1[k])
-                #aucddp[k,l] <- simpson(rocddp[,k,l], p)
-                
-                #if(pauc$compute) {                    
-                #    if(pauc$focus == "FPF"){
-                #        pu <- seq(p[1], pauc$value, len = np)
-                #        q0_pauc <- qnorm(1 - pu, mean = mu.h[l], sd = Sigma0[k])
-                #        rocddp_pauc[,k,l] <- 1 - pnorm(q0_pauc, mean= mu.d[l], sd = Sigma1[k])
-                #        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                #    } else {
-                #        pu <- seq(pauc$value, p[np], len = np)
-                #        q1_pauc <- qnorm(1 - pu, mean = mu.d[l], sd = Sigma1[k])
-                #        rocddp_pauc[,k,l] <- pnorm(q1_pauc, mean = mu.h[l], sd = Sigma0[k] )
-                #        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                #    }
-                #}
-                
-                if(density$compute){
-                    dens.h[, k, l] <- dnorm(grid.h, mean = mu.h[l], sd = Sigma0[k])
-                    dens.d[, k, l] <- dnorm(grid.d, mean = mu.d[l], sd = Sigma1[k])
-                }
-            }
-        }        
-        if(L.d == 1 & L.h > 1) {
-            mu.h <- tcrossprod(X0p, Beta0[k,,]) #X0p%*%t(Beta0[k,,])
-            mu.d <- X1p%*%Beta1[k,]
-            meanfun.d[,k] <- mu.d
-            
-            for(l in 1:npred) {
-                aux0 <- norMix(mu = c(mu.h[l,]), sigma = Sigma0[k,], w = P0[k,])
-                q0 <- qnorMix(1 - p, aux0)
-                rocddp[,k,l] <- 1 - pnorm(q0, mean = mu.d[l], sd = Sigma1[k])
-                aucddp[k,l] <- simpson(rocddp[,k,l], p)
-                meanfun.h[l,k] = sum(P0[k,]*t(mu.h[l,]))
-                
-                if(pauc$compute) {      
-                    if(pauc$focus == "FPF"){
-                        pu <- seq(p[1], pauc$value, len = np)
-                        q0_pauc <- qnorMix(1-pu, aux0)
-                        rocddp_pauc[,k,l] <- 1 - pnorm(q0_pauc, mean= mu.d[l,], sd = Sigma1[k])
-                        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                    } else{
-                        pu <- seq(pauc$value, p[np], len = np)
-                        q1_pauc <- qnorm(1-pu, mean= mu.d[l], sd = Sigma1[k])
-                        rocddp_pauc[,k,l] <- pnorMix(q1_pauc, aux0)
-                        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                    }
-                }
-                
-                if(density$compute){
-                    dens.d[, k, l] <- dnorm(grid.d, mean = mu.d[l], sd = Sigma1[k])
-                    dens.h[, k, l] <- dnorMix(grid.h, aux0)
-                }
-            }
+        resBoot <- simplify2array(resBoot)    
+        rocddp <- aperm(simplify2array(resBoot["ROC",]), c(1,3,2))
+        aucddp <- t(simplify2array(resBoot["AUC",]))
+        if(pauc$compute){
+            paucddp <- t(simplify2array(resBoot["pAUC",]))
         }
-        
-        if(L.d > 1 & L.h == 1){
-            mu.h <- X0p%*%Beta0[k,]
-            mu.d <- tcrossprod(X1p, Beta1[k,,]) #X1p%*%t(Beta1[k,,])
-            meanfun.h[,k] <- mu.h
-            
-            for(l in 1:npred) {
-                aux1 <- norMix(mu = c(mu.d[l,]), sigma = Sigma1[k,], w = P1[k,])
-                q0 <- qnorm(1-p, mean = mu.h[l], sd = Sigma0[k])
-                rocddp[,k,l] <- 1 - pnorMix(q0, aux1)
-                aucddp[k,l] <- simpson(rocddp[,k,l], p)
-                
-                meanfun.d[l,k] = sum(P1[k,]*t(mu.d[l,]))
-                
-                if(pauc$compute) {
-                    
-                    if(pauc$focus == "FPF"){
-                        pu <- seq(p[1], pauc$value, len = np)
-                        q0_pauc <- qnorm(1-pu, mean = mu.h[l], sd = Sigma0[k])
-                        rocddp_pauc[,k,l] <- 1 - pnorMix(q0_pauc, aux1)
-                        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                    } else{
-                        pu <- seq(pauc$value, p[np], len = np)
-                        q1_pauc <- qnorMix(1-pu, aux1)
-                        rocddp_pauc[,k,l] <- pnorm(q1_pauc, mean = mu.h[l], sd = Sigma0[k])
-                        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                    }
-                }
-                if(density$compute){
-                    dens.h[, k, l] <- dnorm(grid.h, mean = mu.h[l], sd = Sigma0[k])
-                    dens.d[, k, l] <- dnorMix(grid.d, aux1)
-                }
-            }
+        meanfun.h <- simplify2array(resBoot["meanfun.h",])
+        meanfun.d <- simplify2array(resBoot["meanfun.d",])
+        if(density$compute){
+            dens.h <- aperm(simplify2array(resBoot["dens.h",]), c(1,3,2))
+            dens.d <- aperm(simplify2array(resBoot["dens.h",]), c(1,3,2))
         }
-        
-        if(L.d > 1 & L.h > 1){
-            mu.h <- tcrossprod(X0p, Beta0[k,,])#X0p%*%t(Beta0[k,,])
-            mu.d <- tcrossprod(X1p, Beta1[k,,])#X1p%*%t(Beta1[k,,])
-            
-            for(l in 1:npred) {
-                aux0 <- norMix(mu = c(mu.h[l,]), sigma = Sigma0[k,], w = P0[k,])
-                aux1 <- norMix(mu = c(mu.d[l,]), sigma = Sigma1[k,], w = P1[k,])
-                
-                q0 <- qnorMix(1-p, aux0)
-                rocddp[,k,l] <- 1 - pnorMix(q0, aux1)
-                aucddp[k,l] <- simpson(rocddp[,k,l], p)
-                
-                meanfun.h[l,k] <- sum(P0[k,]*t(mu.h[l,]))
-                meanfun.d[l,k] <- sum(P1[k,]*t(mu.d[l,]))
-                
-                if(pauc$compute) { 
-                    if(pauc$focus == "FPF"){
-                        pu <- seq(p[1], pauc$value, len = np)
-                        q0_pauc <- qnorMix(1-pu, aux0)
-                        rocddp_pauc[,k,l] <- 1 - pnorMix(q0_pauc, aux1)
-                        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                    } else{
-                        pu <- seq(pauc$value, p[np], len = np)
-                        q1_pauc <- qnorMix(1-pu, aux1)
-                        rocddp_pauc[,k,l] <- pnorMix(q1_pauc, aux0)
-                        paucddp[k,l] <- simpson(rocddp_pauc[,k,l], pu)
-                    }
-                }
-                if(density$compute){
-                    dens.d[, k, l] <- dnorMix(grid.d, aux1)
-                    dens.h[, k, l] <- dnorMix(grid.h, aux0)
-                }
-            }
-        }
+
+    } else {
+        stop("nsave should be larger than zero.")
     }
-    
+
+    npred <- nrow(X0p)
+
     aucddpm <- apply(aucddp, 2, mean)
     aucddpl <- apply(aucddp, 2, quantile, prob = 0.025)
     aucddph <- apply(aucddp, 2, quantile, prob = 0.975)
@@ -634,10 +671,10 @@ mcmc = mcmccontrol()) {
         attr(res$pAUC, "value") <- pauc$value
         attr(res$pAUC, "focus") <- pauc$focus
     }
-     if(density$compute) {
+    if(density$compute) {
         res$dens <- list()
-        res$dens$h <- list(grid = grid.h, dens = dens.h)
-        res$dens$d <- list(grid = grid.d, dens = dens.d)
+        res$dens$h <- list(grid = density$grid.h, dens = dens.h)
+        res$dens$d <- list(grid = density$grid.d, dens = dens.d)
     }
     
     res$reg.fun <- list()
@@ -708,31 +745,31 @@ mcmc = mcmccontrol()) {
     if(L.h >1){
         res$fit$h <- list(formula = formula.h,
         mm = MM0,
-        beta = Beta0,
-        sd   = Sigma0,
-        probs = P0)
+        beta = res0$Beta,
+        sd   = sqrt(res0$Sigma2),
+        probs = res0$P)
     }
     
     if(L.h == 1){
         res$fit$h <- list(formula = formula.h,
         mm = MM0,
-        beta = Beta0,
-        sd   = Sigma0)
+        beta = res0$Beta,
+        sd   = sqrt(res0$Sigma2))
     }
     
     if(L.d > 1){
         res$fit$d <- list(formula = formula.d,
         mm = MM1,
-        beta = Beta1,
-        sd   = Sigma1,
-        probs = P1)
+        beta = res1$Beta,
+        sd   = sqrt(res1$Sigma2),
+        probs = res1$P)
     }
     
     if(L.d == 1){
         res$fit$d <- list(formula = formula.d,
         mm = MM1,
-        beta = Beta1,
-        sd   = Sigma1)
+        beta = res1$Beta,
+        sd   = sqrt(res1$Sigma2))
     }
     
     res$data_model <- list(y = list(h = data.h.marker,

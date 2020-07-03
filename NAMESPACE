@@ -8,6 +8,7 @@ importFrom(splines, bs)
 importFrom(Matrix, bdiag)
 importFrom(spatstat, ewcdf)
 importFrom(lattice, xyplot, panel.xyplot, ltext, strip.custom)
+importFrom(parallel, mclapply, makePSOCKcluster, clusterSetRNGStream, parLapply, stopCluster)
 importFrom(MASS, mvrnorm)
 import(pbivnorm, pbivnorm)
 export(cROCData, pooledROC.BB, pooledROC.emp, pooledROC.kernel, pooledROC.dpm, AROC.bnp, AROC.kernel, AROC.sp, cROC.bnp, cROC.kernel, cROC.sp, 

@@ -13,7 +13,8 @@ pooledROC.dpm(marker, group, tag.h, data,
   compute.lpml = FALSE, compute.WAIC = FALSE, compute.DIC = FALSE, 
   pauc = pauccontrol(), density = densitycontrol(), 
   prior.h = priorcontrol.dpm(), prior.d = priorcontrol.dpm(),
-  mcmc = mcmccontrol())
+  mcmc = mcmccontrol(),
+  parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -31,6 +32,9 @@ pooledROC.dpm(marker, group, tag.h, data,
   \item{prior.h}{Hyparameter specification for the healthy population. A list of control values to replace the default values returned by the function \code{\link{priorcontrol.dpm}}. See \code{\link{priorcontrol.dpm}} for details.}
   \item{prior.d}{Hyparameter specification for the diseased population. A list of control values to replace the default values returned by the function \code{\link{priorcontrol.dpm}}. See \code{\link{priorcontrol.dpm}} for details.}
   \item{mcmc}{A list of control values to replace the default values returned by the function \code{\link{mcmccontrol}}. See \code{\link{mcmccontrol}} for details.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
  }
 \details{
 Estimates the pooled ROC curve (ROC) defined as

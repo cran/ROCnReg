@@ -1,5 +1,5 @@
 compute.threshold.YI.AROC.sp <-
-function(object, newdata) {
+function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
   if(class(object)[1] != "AROC.sp") {
     stop(paste0("This function can not be used for this object class: ", class(object)[1]))
   }

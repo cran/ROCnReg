@@ -7,8 +7,11 @@ function(y, res, L) {
 		niter <- length(mu)
 
 		termsum <- matrix(0, nrow = niter, ncol = n)
-		for(k in 1:niter) {
-			termsum[k,] <- dnorm(y, mean = mu[k], sd = sqrt(sigma2[k]))
+		#for(k in 1:niter) {
+		#	termsum[k,] <- dnorm(y, mean = mu[k], sd = sqrt(sigma2[k]))
+		#}
+		for(i in 1:n) {
+			termsum[,i] <- dnorm(y[i], mean = mu, sd = sqrt(sigma2))
 		}
 	} else {
 		n <- length(y)

@@ -1,15 +1,39 @@
 cROC.sp <-
-function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000) {
-    
-    pauc <- do.call("pauccontrol", pauc)
-    
+function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+
+    doBoostROC <- function(i, formula.h, formula.d, data.h, data.d, newdata, croc, est.cdf, pauc, p) {    
+        data.boot.d <- data.d
+        data.boot.h <- data.h
+        
+        res.h.b <- sample(croc$fit$h$residuals, replace = TRUE)
+        res.d.b <- sample(croc$fit$d$residuals, replace = TRUE)
+        
+        data.boot.h[,marker] <- croc$fit$h$fitted + res.h.b
+        data.boot.d[,marker] <- croc$fit$d$fitted + res.d.b
+
+        obj.boot <- compute.ROC(formula.h, formula.d, data.boot.h, data.boot.d, newdata, est.cdf, pauc, p)
+        
+        res <- list()
+        res$ROC <- obj.boot$ROC
+        res$AUC <- obj.boot$AUC
+        res$coeff_h <- obj.boot$coeff$h
+        res$coeff_d <- obj.boot$coeff$d
+        res$coeff_ROC <- obj.boot$coeff$ROC
+        if(pauc$compute){
+            res$pAUC <- obj.boot$pAUC
+        }
+        res
+    }    
+
     compute.ROC <- function(formula.h, formula.d, data.h, data.d, newdata, est.cdf, pauc, p = seq(0,1,l = 101)) {        
         n0 <- nrow(data.h)
         n1 <- nrow(data.d)
         
         np <- length(p)
         
-        marker <- all.vars(formula.h)[1]
+        #marker <- all.vars(formula.h)[1]
+        tf <- terms.formula(formula.h)
+        marker <- as.character(attr(tf, "variables")[2])
         
         # Fit the model in the healthy population
         fit0p <- lm(formula = formula.h, data = data.h)
@@ -83,8 +107,11 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
         res$coeff <- list(h = coefficients(fit0p), d = coefficients(fit1p), ROC = beta.ROC)
         res
     }
-    
+    pauc <- do.call("pauccontrol", pauc)
+
     est.cdf <- match.arg(est.cdf)
+    parallel <- match.arg(parallel)
+
     np <- length(p)
     
     # Check if the seq of FPF is correct
@@ -121,8 +148,10 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     marker <- marker.h
 
     # Variables in the model
-    names.cov.h <- all.vars(formula.h)[-1]
-    names.cov.d <- all.vars(formula.d)[-1]
+    #names.cov.h <- all.vars(formula.h)[-1]
+    #names.cov.d <- all.vars(formula.d)[-1]
+    names.cov.h <- get_vars_formula(formula.h) #all.vars(formula.h)[-1]
+    names.cov.d <- get_vars_formula(formula.d) #all.vars(formula.d)[-1]
     names.cov <- c(names.cov.h, names.cov.d[is.na(match(names.cov.d, names.cov.h))])
     
     if(!missing(newdata) && !inherits(newdata, "data.frame"))
@@ -161,35 +190,57 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     coeffROCp <- res.fit$coeff$ROC
 
     if(B > 0) {
-        # Confidence intervals
-        crocpb <- array(0, dim = c(nrow(newdata), length(p), B))
-        caucb <- matrix(0, nrow = nrow(newdata), ncol = B)
-        if(pauc$compute){
-            cpaucb <- matrix(0, nrow = nrow(newdata), ncol = B)
-        }
-        ccoeff0b <- matrix(0, nrow = length(coeff0p), ncol = B)
-        ccoeff1b <- matrix(0, nrow = length(coeff1p), ncol = B)
-        ccoeffROCb <- matrix(0, nrow = length(coeffROCp), ncol = B)
-        for(l in 1:B) {
-            data.boot.d <- data.new.d
-            data.boot.h <- data.new.h
-            
-            res.h.b <- sample(res.fit$fit$h$residuals, replace = TRUE)
-            res.d.b <- sample(res.fit$fit$d$residuals, replace = TRUE)
-            
-            data.boot.h[,marker] <- res.fit$fit$h$fitted + res.h.b
-            data.boot.d[,marker] <- res.fit$fit$d$fitted + res.d.b
-            
-            res.boot <- compute.ROC(formula.h = formula.h, formula.d = formula.d, data.h = data.boot.h, data.d = data.boot.d, newdata = newdata, est.cdf = est.cdf, pauc = pauc, p = p)
-            
-            crocpb[,,l] <- res.boot$ROC
-            caucb[,l] <- res.boot$AUC
-            if(pauc$compute){
-                cpaucb[,l] <- res.boot$pAUC
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
             }
-            ccoeff0b[,l] <- 	res.boot$coeff$h
-    		ccoeff1b[,l] <- res.boot$coeff$d
-    		ccoeffROCb[,l] <- res.boot$coeff$ROC
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
+        }
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(B), doBoostROC, formula.h = formula.h, formula.d = formula.d, data.h = data.new.h, data.d = data.new.d, newdata  = newdata, croc = res.fit, est.cdf = est.cdf, pauc = pauc, p = p, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(B), doBoostROC, formula.h = formula.h, formula.d = formula.d, data.h = data.new.h, data.d = data.new.d, newdata  = newdata, croc = res.fit, est.cdf = est.cdf, pauc = pauc, p = p)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                         if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(B), doBoostROC, formula.h = formula.h, formula.d = formula.d, data.h = data.new.h, data.d = data.new.d, newdata  = newdata, croc = res.fit, est.cdf = est.cdf, pauc = pauc, p = p)
+                        }                           
+                    }
+                }
+            } else {
+                lapply(seq_len(B), doBoostROC, formula.h = formula.h, formula.d = formula.d, data.h = data.new.h, data.d = data.new.d, newdata  = newdata, croc = res.fit, est.cdf = est.cdf, pauc = pauc, p = p)
+            }
+
+        resBoot <- simplify2array(resBoot)    
+        crocpb <- simplify2array(resBoot["ROC",])
+        caucb <- simplify2array(resBoot["AUC",])
+
+        ccoeff0b <- simplify2array(resBoot["coeff_h",])
+        ccoeff1b <- simplify2array(resBoot["coeff_d",])
+        ccoeffROCb <- simplify2array(resBoot["coeff_ROC",])
+
+        if(pauc$compute){
+            cpaucb <- simplify2array(resBoot["pAUC",])
         }
     }
     

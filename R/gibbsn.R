@@ -18,7 +18,8 @@ function(y, prior, mcmc, standardise = FALSE) {
   b <- prior$b
   
   Mu <- Mu1 <- Sigma2 <- Sigma21 <- numeric(nsim)
-  Mu[1] <- mean(yt); Sigma2[1] <- var(yt)
+  Mu[1] <- mean(yt)
+  Sigma2[1] <- var(yt)
   
   for(i in 2:nsim) {
     meanmu <- ((n*mean(yt)*S0+m0*Sigma2[i-1])/(n*S0+Sigma2[i-1]))

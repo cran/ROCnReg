@@ -1,6 +1,8 @@
 interpret.AROCformula <-
 function(formula, data) {
-	env <- environment(formula) 
+	env <- environment(formula)
+    encl <- loadNamespace("ROCnReg")
+
     if(inherits(formula, "character"))        
         formula <- as.formula(formula)
 
@@ -32,15 +34,37 @@ function(formula, data) {
         nlin <- length(fixed)
     }
 
-    nterms <- c(nlin, nfun)
-
     II <- list()
     h  <- list()
-    K <- list()
+    K_total <- list()
     partial <- vector()
     k <- 0
-    if(nt) {
-        names.cov <- all.vars(formula)[-1]
+    vars.formula <- NULL
+    if(nt) {        
+        if(nfun > 0) {
+            for(i in ifun) {
+                k <- k + 1                   
+                st <- eval(parse(text = paste("AROC.", terms[i], sep = "")))
+                II[[k]] <- st$cov
+                h[[k]] <- -1
+                K_total[[k]] <- st$K
+                partial[k] <- terms[i]
+                vars.formula <- c(vars.formula, st$term)           
+            }
+        }
+        # Parametric (linear and categorical: all in one)
+        if(nlin > 0) {
+            k <- k + 1
+            full_term <- paste(terms[ilin], collapse = "+", sep = "")
+            II[[k]]<- c(-1, full_term)
+            h[[k]] <- 0 # parametric
+            K_total[[k]] <- 0
+            partial[k] <- full_term
+            vars.formula <- c(vars.formula, all.vars(formula(paste("~", full_term))))
+
+        }
+        #names.cov <- all.vars(formula)[-1]
+        names.cov <- vars.formula
         data.cov <- data[, names(data) %in% names.cov, drop = FALSE]
         #numeric.var <- names.cov[!apply(data.cov, 2, is.factor)]
         numeric.var <- names.cov[!sapply(names.cov, function(x, data) is.factor(data[,x]), data = data.cov)]
@@ -56,26 +80,6 @@ function(formula, data) {
             cov.std <- NULL
             data.cov.std <- data.cov
         }
-        if(nfun > 0) {
-            for(i in ifun) {
-                k <- k + 1                   
-                st <- eval(parse(text = paste("AROC.", terms[i], sep="")))
-                II[[k]] <- st$cov
-                h[[k]] <- -1
-                K[[k]] <- st$K
-                partial[k] <- terms[i]           
-            }
-        }
-        # Parametric (linear and categorical: all in one)
-        if(nlin > 0) {
-            k <- k + 1
-            full_term <- paste(terms[ilin], collapse = "+", sep = "")
-            II[[k]]<- c(-1, full_term)
-            h[[k]] <- 0 # parametric
-            K[[k]] <- 0
-            partial[k] <- full_term
-
-        }
     } else { # Only the intercept
         names.cov <- NULL
         data.cov <- NULL
@@ -89,6 +93,6 @@ function(formula, data) {
         matrix(0, nrow = 2)
     }      
     #res <- list(marker = marker, II = II, h = unlist(h), K = unlist(K), npartial = k, partial = partial, data.cov = data.cov, cov.std = cov.std, data.cov.std = data.cov.std)
-    res <- list(marker = marker, II = II, h = unlist(h), K = K, npartial = k, partial = partial, data.cov = data.cov, cov.std = cov.std, data.cov.std = data.cov.std)
+    res <- list(marker = marker, II = II, h = unlist(h), K = K_total, npartial = k, partial = partial, data.cov = data.cov, cov.std = cov.std, data.cov.std = data.cov.std)
     res
 }

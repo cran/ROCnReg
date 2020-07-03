@@ -1,5 +1,5 @@
 compute.threshold.FPF.pooledROC.kernel <-
-function(object, FPF = 0.5) {
+function(object, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	if(class(object)[1] != "pooledROC.kernel") {
 		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}

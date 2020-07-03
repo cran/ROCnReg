@@ -23,7 +23,7 @@ function(y, X, res){
         term <- matrix(0, nrow = niter, ncol = n)
         for(k in 1:niter) {
             term[k,] <- dnorm(y, mean = X%*%beta[k,], sd = sqrt(sigma2[k]))
-        }
+        }        
     }
     
     if(L > 1){

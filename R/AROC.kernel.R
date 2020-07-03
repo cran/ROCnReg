@@ -1,5 +1,24 @@
 AROC.kernel <-
-function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), pauc = pauccontrol(), data, p = seq(0,1,l = 101), B = 1000) {
+function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), pauc = pauccontrol(), data, p = seq(0,1,l = 101), B = 1000, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+    doBoostROC <- function(i, marker, covariate, group, tag.h, bw, regtype, pauc, croc, p) {
+        
+        data.boot.d <- croc$data.d[sample(nrow(croc$data.d), replace=TRUE),]
+        data.boot.h <- croc$data.h
+        res.h.b <- sample(croc$fit$fit.mean$resid/sqrt(croc$fit$fit.var$mean), replace = TRUE)
+        data.boot.h[,marker] <- croc$fit$fit.mean$mean + sqrt(croc$fit$fit.var$mean)*res.h.b
+        data.boot <- rbind(data.boot.d, data.boot.h)
+
+        obj.boot <- compute.ROC(marker, covariate, group, tag.h, bw, regtype, pauc, data.boot, p)
+        
+        res <- list()
+        res$ROC <- obj.boot$ROC
+        res$AUC <- obj.boot$AUC
+        if(pauc$compute){
+            res$pAUC <- obj.boot$pAUC
+        }
+        res
+    }    
+
     compute.ROC <- function(marker, covariate, group, tag.h, bw, regtype, pauc, data, p = seq(0,1,l = 101)) {
         data.h <- data[data[,group] == tag.h,]
         data.d <- data[data[,group] != tag.h,]
@@ -68,9 +87,10 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
     }
     
     pauc <- do.call("pauccontrol", pauc)
-    
+
     np <- length(p)
     
+    parallel <- match.arg(parallel)    
     bw <- match.arg(bw)
     regtype <- match.arg(regtype)
     
@@ -91,28 +111,55 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
         paarocp <- croc$pAUC
     }
     if(B > 0) {
-        arocpb <- matrix(0, nrow = np, ncol = B)
-        aarocpb <- numeric(B)
-        if(pauc$compute){
-            paarocpb <- numeric(B)
-        }
-        for(l in 1:B) {
-            # Another option: healthy (residuals) - diseased (original sample)
-            data.boot.d <- croc$data.d[sample(nrow(croc$data.d), replace=TRUE),]
-            data.boot.h <- croc$data.h
-            res.h.b <- sample(croc$fit$fit.mean$resid/sqrt(croc$fit$fit.var$mean), replace = TRUE)
-            data.boot.h[,marker] <-croc$fit$fit.mean$mean + sqrt(croc$fit$fit.var$mean)*res.h.b
-            data.boot <- rbind(data.boot.d, data.boot.h)
-            
-            res.boot <- compute.ROC(marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, data = data.boot, p = p)
-            arocpb[,l] <- res.boot$ROC
-            aarocpb[l] <- res.boot$AUC
-            if(pauc$compute){
-                paarocpb[l] <- res.boot$pAUC
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
             }
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
+        }
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(B), doBoostROC, marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, croc = croc, p = p, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(B), doBoostROC, marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, croc = croc, p = p)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                        if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(B), doBoostROC, marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, croc = croc, p = p)
+                        }                        
+                    }
+                }
+            } else {
+                lapply(seq_len(B), doBoostROC, marker = marker, covariate = covariate, group = group, tag.h = tag.h, bw = bw.aux, regtype = regtype.aux, pauc = pauc, croc = croc, p = p)
+            }
+
+        resBoot <- simplify2array(resBoot)    
+        arocpb <- simplify2array(resBoot["ROC",])
+        aarocpb <- unlist(resBoot["AUC",])
+        if(pauc$compute){
+            paarocpb <- unlist(resBoot["pAUC",])
         }
     }
-    columns <-switch(as.character(B>0),"TRUE" = 1:3,"FALSE"=1)
+    columns <-switch(as.character(B > 0),"TRUE" = 1:3,"FALSE"=1)
     col.names <-c("est","ql", "qh")[columns]
     
     poolROC <- matrix(0, ncol = length(columns), nrow = np, dimnames = list(1:np, col.names))

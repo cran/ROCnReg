@@ -11,7 +11,8 @@ This function estimates the covariate-adjusted ROC curve (AROC) using the nonpar
 AROC.bnp(formula.h, group, tag.h, data, standardise = TRUE, 
   p = seq(0, 1, l = 101), compute.lpml = FALSE, compute.WAIC = FALSE, 
   compute.DIC = FALSE, pauc = pauccontrol(), density = densitycontrol.aroc(),
-  prior.h = priorcontrol.bnp(), mcmc = mcmccontrol())
+  prior.h = priorcontrol.bnp(), mcmc = mcmccontrol(),
+  parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -28,6 +29,9 @@ AROC.bnp(formula.h, group, tag.h, data, standardise = TRUE,
   \item{density}{A list of control values to replace the default values returned by the function \code{\link{densitycontrol.aroc}}. This argument is used to indicate whether the conditional densities of the marker in the healthy population should be computed, and in case it is to be computed, at which grid of test outcomes the conditional densities should be evaluated, and at which covariate values they should be predicted.}
   \item{prior.h}{A list of control values to replace the default values returned by the function \code{\link{priorcontrol.bnp}}. See \code{\link{priorcontrol.bnp}} for details.}
   \item{mcmc}{A list of control values to replace the default values returned by the function \code{\link{mcmccontrol}}. See \code{\link{mcmccontrol}} for details.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 } 
  
 \details{

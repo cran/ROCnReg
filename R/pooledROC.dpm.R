@@ -9,8 +9,149 @@ pauc = pauccontrol(),
 density = densitycontrol(),
 prior.h = priorcontrol.dpm(),
 prior.d = priorcontrol.dpm(),
-mcmc = mcmccontrol()) {
+mcmc = mcmccontrol(), 
+parallel = c("no", "multicore", "snow"), 
+ncpus = 1, 
+cl = NULL) {
     
+    doMCMCROC <- function(k, res0, res1, L.h, L.d, pauc, density) {
+        res <- list()
+        if(L.h == 1 & L.d == 1) {
+            # Binormal model
+            a <- (res0$Mu[k] - res1$Mu[k])/sqrt(res1$Sigma[k])
+            b <- sqrt(res0$Sigma[k])/sqrt(res1$Sigma[k])
+            
+            # ROC curve
+            res$ROC <- 1 - pnorm(a + b*qnorm(1-p))
+            # AUC
+            res$AUC <- 1 - pnorm(a/sqrt(1+b^2))
+
+            if(pauc$compute) {
+                if(pauc$focus == "FPF"){
+                    res$pAUC <- pbivnorm(-a/sqrt(1+b^2), qnorm(pauc$value), -b/sqrt(1+b^2))
+                } else {
+                    res$pAUC <- pbivnorm(-a/sqrt(1+b^2), qnorm(1-pauc$value), -1/sqrt(1+b^2))
+                }
+            }
+
+            if(density$compute) {
+                res$dens.h <- dnorm(density$grid.h, mean = res0$Mu[k], sd = sqrt(res0$Sigma[k]))
+                res$dens.d <- dnorm(density$grid.d, mean = res1$Mu[k], sd = sqrt(res1$Sigma[k]))
+            }
+            
+        } else if(L.h == 1 & L.d > 1){
+            aux1 <- norMix(mu = res1$Mu[k,], sigma = sqrt(res1$Sigma[k,]), w = res1$P[k,])
+            q0 <- qnorm(1-p, mean = res0$Mu[k], sd= sqrt(res0$Sigma[k]))
+            res$ROC <-  1 - pnorMix(q0, aux1)
+            # res$AUC <- simpson(rocdpm[,k], p)
+            ##############################################################
+            # Computed using results in Erkanly et al (Stat Med, 2006)
+            ##############################################################
+            a <- outer(res1$Mu[k,], res0$Mu[k], "-")*(sqrt(res1$Sigma[k,])^(-1))
+            b <- outer(sqrt(res1$Sigma[k,])^(-1), sqrt(res0$Sigma[k]), "*")
+            
+            auc_aux <- pnorm(a/sqrt(1+b^2))
+            prod.weights <- outer(res1$P[k,], 1, "*")
+
+            res$AUC <- sum(auc_aux*prod.weights)
+            ###############################################################
+            if(pauc$compute) {
+                if(pauc$focus == "FPF"){
+                    q01 <- qnorm(1-pauc$pu, mean = res0$Mu[k], sd= sqrt(res0$Sigma[k]))
+                    rocdpm1 <-  1 - pnorMix(q01, aux1)
+                    res$pAUC <- simpson(rocdpm1, pauc$pu)
+                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(pauc$value), -c(b/sqrt(1+b^2)))
+                    #res$pAUC <- sum(aux*c(prod.weights))
+                } else {
+                    q1 <-qnorMix(1-pauc$pu, aux1)
+                    rocdpm1 <-  pnorm(q1, mean = res0$Mu[k], sd = sqrt(res0$Sigma[k]))
+                    res$pAUC <- simpson(rocdpm1, pauc$pu)
+                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(1-pauc$value), -c(1/sqrt(1+b^2)))
+                    #res$pAUC <- sum(aux*c(prod.weights))
+                }
+            }
+
+            if(density$compute) {
+                res$dens.h <- dnorm(density$grid.h, mean = res0$Mu[k], sd = sqrt(res0$Sigma[k]))
+                res$dens.d <- dnorMix(x = density$grid.d, aux1)
+            }
+
+        } else if (L.h > 1 & L.d == 1){
+            aux0 <- norMix(mu = res0$Mu[k,], sigma = sqrt(res0$Sigma[k,]), w = res0$P[k,])
+            q0 <- qnorMix(1-p, aux0)
+            res$ROC <-  1 - pnorm(q0, mean = res1$Mu[k], sd = sqrt(res1$Sigma[k]))
+            #res$AUC <- simpson(rocdpm[,k], p)
+            ##############################################################
+            # Computed using results in Erkanly et al (Stat Med, 2006)
+            ##############################################################
+            a <- outer(res1$Mu[k], res0$Mu[k,], "-")*(sqrt(res1$Sigma[k])^(-1))
+            b <- outer(sqrt(res1$Sigma[k])^(-1), sqrt(res0$Sigma[k,]), "*")
+            
+            auc_aux <- pnorm(a/sqrt(1+b^2))
+            prod.weights <- outer(1, res0$P[k,], "*")
+
+            res$AUC <- sum(auc_aux*prod.weights)
+            ##############################################################
+            if(pauc$compute) {
+                if(pauc$focus == "FPF"){
+                    q01 <- qnorMix(1-pauc$pu, aux0)
+                    rocdpm1 <-  1 - pnorm(q01, mean = res1$Mu[k], sd = sqrt(res1$Sigma[k]))
+                    res$pAUC <- simpson(rocdpm1, pauc$pu)
+                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(pauc$value), -c(b/sqrt(1+b^2)))
+                    #res$pAUC <- sum(aux*c(prod.weights))
+                } else{
+                    q1 <- qnorm(1-pauc$pu, mean = res1$Mu[k], sd = sqrt(res1$Sigma[k]))
+                    rocdpm1 <-  pnorMix(q1,aux0)
+                    res$pAUC <- simpson(rocdpm1, pauc$pu)
+                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(1-pauc$value), -c(1/sqrt(1+b^2)))
+                    #res$pAUC <- sum(aux*c(prod.weights))
+                }
+            }
+            if(density$compute) {
+                res$dens.h <- dnorMix(x = density$grid.h, aux0)
+                res$dens.d <- dnorm(density$grid.d, mean = res1$Mu[k], sd = sqrt(res1$Sigma[k]))                
+            }
+        } else{
+            aux0 <- norMix(mu = res0$Mu[k,], sigma = sqrt(res0$Sigma[k,]), w = res0$P[k,])
+            aux1 <- norMix(mu = res1$Mu[k,], sigma = sqrt(res1$Sigma[k,]), w = res1$P[k,])
+            q0 <- qnorMix(1-p, aux0)
+            res$ROC <- 1 - pnorMix(q0, aux1)
+            #res$AUC <- simpson(rocdpm[,k], p)
+            ##############################################################
+            # Computed using results in Erkanly et al (Stat Med, 2006)
+            ###############################################################
+            a <- outer(res1$Mu[k,], res0$Mu[k,], "-")*(sqrt(res1$Sigma[k,])^(-1))
+            b <- outer(sqrt(res1$Sigma[k,])^(-1), sqrt(res0$Sigma[k,]), "*")
+            
+            auc_aux <- pnorm(a/sqrt(1+b^2))
+            prod.weights <- outer(res1$P[k,], res0$P[k,], "*")
+
+            res$AUC <- sum(auc_aux*prod.weights)
+            ###############################################################
+            if(pauc$compute) {
+                if(pauc$focus == "FPF"){
+                    q01 <- qnorMix(1-pauc$pu, aux0)
+                    rocdpm1 <- 1 - pnorMix(q01, aux1)
+                    res$pAUC <- simpson(rocdpm1, pauc$pu)
+                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(pauc$value), -c(b/sqrt(1+b^2)))
+                    #res$pAUC <- sum(aux*c(prod.weights))
+                } else {
+                    q1 <- qnorMix(1-pauc$pu, aux1)
+                    rocdpm1 <- pnorMix(q1, aux0)
+                    res$pAUC <- simpson(rocdpm1, pauc$pu)
+                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(1-pauc$value), -c(1/sqrt(1+b^2)))
+                    #res$pAUC <- sum(aux*c(prod.weights))
+                }
+            }
+             if(density$compute) {
+                res$dens.h <- dnorMix(x = density$grid.h, aux0)
+                res$dens.d <- dnorMix(x = density$grid.d, aux1)                
+            }
+        }
+        res
+    }
+    parallel <- match.arg(parallel)
+
     pauc <- do.call("pauccontrol", pauc)    
     density <- do.call("densitycontrol", density)
     mcmc <- do.call("mcmccontrol", mcmc)
@@ -219,206 +360,83 @@ mcmc = mcmccontrol()) {
         mcmc = mcmc,
         standardise = standardise)
     }
-    
-    if(L.d == 1 & L.h == 1){
-        mu0 <- res0$Mu
-        sigma02 <- res0$Sigma2
-        p0 <- NULL
-        mu1 <- res1$Mu
-        sigma12 <- res1$Sigma2
-        p1 <- NULL
-        niter <- length(mu0)
-    } else if(L.d == 1 & L.h > 1){
-        mu0 <- res0$Mu
-        sigma02 <- res0$Sigma2
-        p0 <- res0$P
-        mu1 <- res1$Mu
-        sigma12 <- res1$Sigma2
-        p1 <- NULL
-        niter <- nrow(p0)
-    } else if(L.h == 1 & L.d > 1){
-        mu0 <- res0$Mu
-        sigma02 <- res0$Sigma2
-        p0 <- NULL
-        mu1 <- res1$Mu
-        sigma12 <- res1$Sigma2
-        p1 <- res1$P
-        niter <- nrow(p1)
-    } else {
-        mu0 <- res0$Mu
-        sigma02 <- res0$Sigma2
-        p0 <- res0$P
-        mu1 <- res1$Mu
-        sigma12 <- res1$Sigma2
-        p1 <- res1$P
-        niter <- nrow(p0)
+
+    if(density$compute){ 
+        if(all(is.na(density$grid.h))) {
+            density$grid.h <- seq(min(yh.wom) - 1, max(yh.wom) + 1, len = 200)
+        }        
+        if(all(is.na(density$grid.d))) {
+            density$grid.d <- seq(min(yd.wom) - 1, max(yd.wom) + 1, len = 200)
+        }
     }
-    
-    rocdpm <- matrix(0, nrow = np, ncol = niter)
-    aucdpm <- numeric(niter)
-    paucdpm <- numeric(niter)
-    
     if(pauc$compute) {
         if(pauc$focus == "FPF") {
-            pu <- seq(0, pauc$value, len = np)
+            pauc$pu <- seq(0, pauc$value, len = np)
         } else {
-            pu <- seq(pauc$value, 1, len = np)
+            pauc$pu <- seq(pauc$value, 1, len = np)
         }
-    }
-    
-    for(k in 1:niter) {
-        if(L.h == 1 & L.d == 1) {
-            # Binormal model
-            a <- (mu0[k] - mu1[k])/sqrt(sigma12[k])
-            b <- sqrt(sigma02[k])/sqrt(sigma12[k])
-            
-            # ROC curve
-            rocdpm[,k] <- 1 - pnorm(a + b*qnorm(1-p))
-            # AUC
-            aucdpm[k] <- 1 - pnorm(a/sqrt(1+b^2))
-
-            #rocdpm[,k] <- 1 - pnorm(qnorm(1-p, mean = mu0[k], sd= sqrt(sigma02[k])), mean = mu1[k], sd = sqrt(sigma12[k]))
-            #aucdpm[k] <- simpson(rocdpm[,k], p)
-            if(pauc$compute) {
-                if(pauc$focus == "FPF"){
-                    #rocdpm1 <- 1 - pnorm(qnorm(1-pu, mean = mu0[k], sd= sqrt(sigma02[k])), mean = mu1[k], sd = sqrt(sigma12[k]))
-                    #paucdpm[k] <- simpson(rocdpm1, pu)
-                    paucdpm[k] <- pbivnorm(-a/sqrt(1+b^2), qnorm(pauc$value), -b/sqrt(1+b^2))
-                } else{
-                    #rocdpm1 <- pnorm(qnorm(1-pu, mean = mu1[k], sd= sqrt(sigma12[k])), mean = mu0[k], sd = sqrt(sigma02[k]))
-                    #paucdpm[k] <- simpson(rocdpm1, pu)
-                    paucdpm[k] <- pbivnorm(-a/sqrt(1+b^2), qnorm(1-pauc$value), -1/sqrt(1+b^2))
-                }
+    }    
+    if(mcmc$nsave > 0) {
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
             }
-            
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
         }
-        else if(L.h == 1 & L.d > 1){
-            aux1 <- norMix(mu = mu1[k,], sigma = sqrt(sigma12[k,]), w = p1[k,])
-            q0 <- qnorm(1-p, mean = mu0[k], sd= sqrt(sigma02[k]))
-            rocdpm[,k] <-  1 - pnorMix(q0, aux1)
-            # aucdpm[k] <- simpson(rocdpm[,k], p)
-            ##############################################################
-            # Computed using results in Erkanly et al (Stat Med, 2006)
-            ##############################################################
-            a <- outer(mu1[k,], mu0[k], "-")*(sqrt(sigma12[k,])^(-1))
-            b <- outer(sqrt(sigma12[k,])^(-1), sqrt(sigma02[k]), "*")
-            
-            auc_aux <- pnorm(a/sqrt(1+b^2))
-            prod.weights <- outer(p1[k,], 1, "*")
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
 
-            aucdpm[k] <- sum(auc_aux*prod.weights)
-            ###############################################################
-            if(pauc$compute) {
-                if(pauc$focus == "FPF"){
-                    q01 <- qnorm(1-pu, mean = mu0[k], sd= sqrt(sigma02[k]))
-                    rocdpm1 <-  1 - pnorMix(q01, aux1)
-                    paucdpm[k] <- simpson(rocdpm1, pu)
-                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(pauc$value), -c(b/sqrt(1+b^2)))
-                    #paucdpm[k] <- sum(aux*c(prod.weights))
-                } else {
-                    q1 <-qnorMix(1-pu, aux1)
-                    rocdpm1 <-  pnorm(q1, mean = mu0[k], sd = sqrt(sigma02[k]))
-                    paucdpm[k] <- simpson(rocdpm1, pu)
-                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(1-pauc$value), -c(1/sqrt(1+b^2)))
-                    #paucdpm[k] <- sum(aux*c(prod.weights))
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, pauc = pauc, density = density, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, pauc = pauc, density = density)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                        if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, pauc = pauc, density = density)
+                        }                        
+                    }
                 }
+            } else {
+                lapply(seq_len(mcmc$nsave), doMCMCROC, res0 = res0, res1 = res1, L.h = L.h, L.d = L.d, pauc = pauc, density = density)
             }
-        } else if (L.h > 1 & L.d == 1){
-            aux0 <- norMix(mu = mu0[k,], sigma = sqrt(sigma02[k,]), w = p0[k,])
-            q0 <- qnorMix(1-p, aux0)
-            rocdpm[,k] <-  1 - pnorm(q0, mean = mu1[k], sd = sqrt(sigma12[k]))
-            #aucdpm[k] <- simpson(rocdpm[,k], p)
-            ##############################################################
-            # Computed using results in Erkanly et al (Stat Med, 2006)
-            ##############################################################
-            a <- outer(mu1[k], mu0[k,], "-")*(sqrt(sigma12[k])^(-1))
-            b <- outer(sqrt(sigma12[k])^(-1), sqrt(sigma02[k,]), "*")
-            
-            auc_aux <- pnorm(a/sqrt(1+b^2))
-            prod.weights <- outer(1, p0[k,], "*")
 
-            aucdpm[k] <- sum(auc_aux*prod.weights)
-            ##############################################################
-            if(pauc$compute) {
-                if(pauc$focus == "FPF"){
-                    q01 <- qnorMix(1-pu, aux0)
-                    rocdpm1 <-  1 - pnorm(q01, mean = mu1[k], sd = sqrt(sigma12[k]))
-                    paucdpm[k] <- simpson(rocdpm1, pu)
-                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(pauc$value), -c(b/sqrt(1+b^2)))
-                    #paucdpm[k] <- sum(aux*c(prod.weights))
-                } else{
-                    q1 <- qnorm(1-pu, mean = mu1[k], sd = sqrt(sigma12[k]))
-                    rocdpm1 <-  pnorMix(q1,aux0)
-                    paucdpm[k] <- simpson(rocdpm1, pu)
-                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(1-pauc$value), -c(1/sqrt(1+b^2)))
-                    #paucdpm[k] <- sum(aux*c(prod.weights))
-                }
-            }
-        } else{
-            aux0 <- norMix(mu = mu0[k,], sigma = sqrt(sigma02[k,]), w = p0[k,])
-            aux1 <- norMix(mu = mu1[k,], sigma = sqrt(sigma12[k,]), w = p1[k,])
-            q0 <- qnorMix(1-p, aux0)
-            rocdpm[,k] <- 1 - pnorMix(q0, aux1)
-            #aucdpm[k] <- simpson(rocdpm[,k], p)
-            ##############################################################
-            # Computed using results in Erkanly et al (Stat Med, 2006)
-            ###############################################################
-            a <- outer(mu1[k,], mu0[k,], "-")*(sqrt(sigma12[k,])^(-1))
-            b <- outer(sqrt(sigma12[k,])^(-1), sqrt(sigma02[k,]), "*")
-            
-            auc_aux <- pnorm(a/sqrt(1+b^2))
-            prod.weights <- outer(p1[k,], p0[k,], "*")
-
-            aucdpm[k] <- sum(auc_aux*prod.weights)
-            ###############################################################
-            if(pauc$compute) {
-                if(pauc$focus == "FPF"){
-                    q01 <- qnorMix(1-pu, aux0)
-                    rocdpm1 <- 1 - pnorMix(q01, aux1)
-                    paucdpm[k] <- simpson(rocdpm1, pu)
-                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(pauc$value), -c(b/sqrt(1+b^2)))
-                    #paucdpm[k] <- sum(aux*c(prod.weights))
-                } else {
-                    q1 <- qnorMix(1-pu, aux1)
-                    rocdpm1 <- pnorMix(q1, aux0)
-                    paucdpm[k] <- simpson(rocdpm1, pu)
-                    #aux <- pbivnorm(c(a/sqrt(1+b^2)), qnorm(1-pauc$value), -c(1/sqrt(1+b^2)))
-                    #paucdpm[k] <- sum(aux*c(prod.weights))
-                }
-            }
+        resBoot <- simplify2array(resBoot)    
+        rocdpm <- simplify2array(resBoot["ROC",])
+        aucdpm <- unlist(resBoot["AUC",])
+        if(pauc$compute){
+            paucdpm <- unlist(resBoot["pAUC",])
         }
+        if(density$compute){
+            dens.h <- t(simplify2array(resBoot["dens.h",]))
+            dens.d <- t(simplify2array(resBoot["dens.d",]))
+        }
+
+    } else {
+        stop("nsave should be larger than zero.")
     }
     
     poolROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
     poolROC[,1] <- apply(rocdpm, 1, mean)
     poolROC[,2] <- apply(rocdpm, 1, quantile, prob = 0.025)
     poolROC[,3] <- apply(rocdpm, 1, quantile, prob = 0.975)
-    
-    if(density$compute){
-        if(is.na(density$grid.h)) grid.h <- seq(min(yh.wom) - 1, max(yh.wom) + 1, len = 200)
-        else grid.h <- density$grid.h
-        
-        if(is.na(density$grid.d)) grid.d <- seq(min(yd.wom) - 1, max(yd.wom) + 1, len = 200)
-        else grid.d <- density$grid.d
-        
-        dens.h <- matrix(0, ncol = length(grid.h), nrow = niter)
-        dens.d <- matrix(0, ncol = length(grid.d), nrow = niter)
-        
-        for(l in 1:niter){
-            if(L.h == 1){
-                dens.h[l,] <- dnorm(grid.h, mean = mu0[l], sd = sqrt(sigma02[l]))
-            } else{
-                aux.h <- norMix(mu = mu0[l,], sigma = sqrt(sigma02[l,]), w = p0[l,])
-                dens.h[l,] <- dnorMix(x = grid.h, aux.h)
-            }
-            if(L.d == 1){
-                dens.d[l,] <- dnorm(grid.d, mean = mu1[l], sd = sqrt(sigma12[l]))
-            } else{
-                aux.d <- norMix(mu = mu1[l,], sigma = sqrt(sigma12[l,]), w = p1[l,])
-                dens.d[l,] <- dnorMix(x = grid.d, aux.d)
-            }
-        }
-    }
     
     res <- list()
     res$call <- match.call()
@@ -477,8 +495,8 @@ mcmc = mcmccontrol()) {
     }
     if(density$compute){
         res$dens <- list()
-        res$dens$h <- list(grid = grid.h, dens = dens.h)
-        res$dens$d <- list(grid = grid.d, dens = dens.d)
+        res$dens$h <- list(grid = density$grid.h, dens = dens.h)
+        res$dens$d <- list(grid = density$grid.d, dens = dens.d)
     }
     if(compute.lpml | compute.WAIC | compute.DIC) {
         termsumh <- inf_criteria_dpm(y = yh.wom, res = res0, L = L.h)
@@ -500,7 +518,8 @@ mcmc = mcmccontrol()) {
         res$DIC$d <- dic_dpm(y = yd.wom, res = res1, L = L.d, termsum = termsumd)
     }
     
-    res$fit <- list(h = list(P = p0, Mu = mu0, Sigma2 = sigma02), d = list(P = p1, Mu = mu1, Sigma2 = sigma12))
+    #res$fit <- list(h = list(P = p0, Mu = mu0, Sigma2 = sigma02), d = list(P = p1, Mu = mu1, Sigma2 = sigma12))
+    res$fit <- list(h = res0, d = res1)
     class(res) <- c("pooledROC.dpm", "pooledROC")
     res
 }

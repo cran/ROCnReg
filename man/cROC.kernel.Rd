@@ -11,7 +11,8 @@ This function estimates the covariate-specific ROC curve (cROC) using the nonpar
 cROC.kernel(marker, covariate, group, tag.h, 
   bw = c("LS", "AIC"), regtype = c("LC", "LL"), 
   data, newdata, pauc = pauccontrol(),  
-  p = seq(0, 1, l = 101), B = 1000)
+  p = seq(0, 1, l = 101), B = 1000,
+    parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -19,13 +20,16 @@ cROC.kernel(marker, covariate, group, tag.h,
   \item{covariate}{A character string with the name of the continuous covariate.}
   \item{group}{A character string with the name of the variable that distinguishes healthy from diseased individuals.}
   \item{tag.h}{The value codifying healthy individuals in the variable \code{group}.}
-  \item{bw}{A character string specifying which method to use to select the bandwidths. AIC specifies expected Kullback-Leibler cross-validation, and LS specifies least-squares cross-validation. Defaults to LS. For details see \code{R}-package \code{\link[np]{np}}.}
-  \item{regtype}{A character string specifying which type of kernel estimator to use for the regression function (see Details). LC specifies a local-constant estimator (Nadaraya-Watson) and LL specifies a local-linear estimator. Defaults to LC. For details see \code{R}-package \code{\link[np]{np}}.}
+  \item{bw}{A character string specifying which method to use to select the bandwidths. AIC specifies expected Kullback-Leibler cross-validation, and LS specifies least-squares cross-validation. Defaults to LS. For details see \code{R}-package \code{\link[np:np-package]{np}}.}
+  \item{regtype}{A character string specifying which type of kernel estimator to use for the regression function (see Details). LC specifies a local-constant estimator (Nadaraya-Watson) and LL specifies a local-linear estimator. Defaults to LC. For details see \code{R}-package \code{\link[np:np-package]{np}}.}
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the covariate-specific ROC curve (AUC and pAUC, if computed) will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
    \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the covariate-adjusted ROC curve should be computed, and in case it is computed, , whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-specific ROC curve. This set is also used to compute the area under the covariate-specific ROC curve using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
 Estimates the covariate-specific ROC curve (cROC) defined as
@@ -39,7 +43,7 @@ Note that, for the sake of clarity, we assume that the covariate of interest is 
 where \eqn{\mu_{D}(x) = E(Y_D | X_D = x)},  \eqn{\mu_{\bar{D}}(x) = E(Y_{\bar{D}} | X_{\bar{D}} = x)} (regression function), \eqn{\sigma^2_{D}(x) = Var(Y_D | X_D = x)}, \eqn{\sigma^2_{\bar{D}}(x) = Var(Y_{\bar{D}} | X_{\bar{D}} = x)} (variance functions), and \eqn{\varepsilon_{D}} and \eqn{\varepsilon_{\bar{D}}} have zero mean, variance one, and distribution functions \eqn{G_{D}} and \eqn{G_{\bar{D}}}, respectively. In this case, the covariate-specific ROC curve can be expressed as
 \deqn{ROC(p|x) = 1 - G_{D}\{a(\mathbf{x}) + b(\mathbf{x})G_{\bar{D}}^{-1}(1-p)\},}
 where \eqn{a(x) = \frac{\mu_{\bar{D}}(x) - \mu_{D}(x)}{\sigma_{D}(x)}}, \eqn{b(x) = \frac{\sigma_{\bar{D}}(x)}{\sigma_{D}(x)}}, and \eqn{G_{D}} and \eqn{G_{\bar{D}}} are the distribution functions of \eqn{\varepsilon_{D}} and \eqn{\varepsilon_{\bar{D}}}, respectively.
-By default, for both the healthy and diseased population, both the regression and variance functions are estimated using the Nadaraya-Watson estimator (LC), and the bandwidth are selected using least-squares cross-validation (LS). Implementation relies on the \code{R}-package \code{\link[np]{np}}. No assumptions are made about \eqn{G_{D}} and \eqn{G_{\bar{D}}}, which are empirically estimated on the basis of standardised residuals. 
+By default, for both the healthy and diseased population, both the regression and variance functions are estimated using the Nadaraya-Watson estimator (LC), and the bandwidth are selected using least-squares cross-validation (LS). Implementation relies on the \code{R}-package \code{\link[np:np-package]{np}}. No assumptions are made about \eqn{G_{D}} and \eqn{G_{\bar{D}}}, which are empirically estimated on the basis of standardised residuals. 
 
 The covariate-specific area under the curve is
 \deqn{AUC(\mathbf{x})=\int_{0}^{1}ROC(p|\mathbf{x})dp,}
@@ -63,7 +67,7 @@ As a result, the function provides a list with the following components:
 \item{ROC}{Estimated covariate-specific ROC curve (AROC), and 95\% pointwise confidence band (if computed).}
 \item{AUC}{Estimated area under the covariate-specific ROC curve, and 95\% confidence interval (if computed).}
 \item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve and 95\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
-\item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component of the list contains the following information: (1) \code{bw.mean}: An object of class \code{\link[np]{npregbw}} with the selected bandwidth for the nonparametric regression function. For further details, see \code{R}-package \code{\link[np]{np}}. (2) \code{bw.var}: An object of class \code{\link[np]{npregbw}} with the selected bandwidth for the nonparametric variance function. For further details, see  \code{R}-package \code{\link[np]{np}}. (3) \code{fit.mean}: An object of class \code{\link[np]{npreg}} with the nonparametric regression function estimate. For further details, see \code{R}-package \code{\link[np]{np}}. (4) \code{fit.var}: An object of class \code{\link[np]{npreg}} with the nonparametric variance function estimate. For further details, see \code{R}-package \code{\link[np]{np}}.}
+\item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component of the list contains the following information: (1) \code{bw.mean}: An object of class \code{\link[np:np.regression.bw]{npregbw}} with the selected bandwidth for the nonparametric regression function. For further details, see \code{R}-package \code{\link[np:np-package]{np}}. (2) \code{bw.var}: An object of class \code{\link[np:np.regression.bw]{npregbw}} with the selected bandwidth for the nonparametric variance function. For further details, see  \code{R}-package \code{\link[np:np-package]{np}}. (3) \code{fit.mean}: An object of class \code{\link[np:np.regression]{npreg}} with the nonparametric regression function estimate. For further details, see \code{R}-package \code{\link[np:np-package]{np}}. (4) \code{fit.var}: An object of class \code{\link[np:np.regression]{npreg}} with the nonparametric variance function estimate. For further details, see \code{R}-package \code{\link[np:np-package]{np}}.}
 }
 \references{
 Hayfield, T., and Racine, J. S.(2008). Nonparametric Econometrics: The np Package. Journal of Statistical Software 27(5). URL http://www.jstatsoft.org/v27/i05/.

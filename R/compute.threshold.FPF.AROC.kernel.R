@@ -1,5 +1,5 @@
 compute.threshold.FPF.AROC.kernel <-
-function(object, newdata, FPF = 0.5) {
+function(object, newdata, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	if(class(object)[1] != "AROC.kernel") {
 		stop(paste0("This function cannot be used for this object class: ", class(object)[1]))
 	}

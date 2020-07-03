@@ -11,8 +11,81 @@ compute.DIC = FALSE,
 pauc = pauccontrol(),
 density = densitycontrol.aroc(),
 prior.h = priorcontrol.bnp(),
-mcmc = mcmccontrol()) {
+mcmc = mcmccontrol(), 
+parallel = c("no", "multicore", "snow"), 
+ncpus = 1, 
+cl = NULL) {
     
+    doMCMCROC <- function(k, res0, L, yd, Xd, pauc, density, p) {
+        nd <- length(yd)
+        np <- length(p)
+
+        # Placement values
+        if(L == 1) {
+            up <- 1 - pnorm(yd, mean = Xd%*%res0$Beta[k,], sd = sqrt(res0$Sigma2[k]))
+            if(density$compute) {
+                # Densities (if needed)
+                npred <- nrow(density$Xhp)
+                dens.h <- matrix(0, nrow = length(density$grid.h), ncol = npred)
+                meanfun.h <- vector(length = npred)
+
+                mu.h <- density$Xhp%*%res0$Beta[k,]
+                meanfun.h <- mu.h
+                for(l in 1:npred){
+                    dens.h[,l] <- dnorm(density$grid.h, mean = mu.h[l], sd = sqrt(res0$Sigma2[k]))
+                }
+            }
+        } else {
+            up <- 1 - apply(t(res0$P[k,]*t(pnorm(yd, mean = tcrossprod(Xd, res0$Beta[k,,]), sd = rep(sqrt(res0$Sigma2[k,]), each = length(yd))))), 1, sum)
+            if(density$compute) {
+                # Densities (if needed)
+                npred <- nrow(density$Xhp)
+                dens.h <- matrix(0, nrow = length(density$grid.h), ncol = npred)
+                meanfun.h <- vector(length = npred)
+
+                mu.h <- tcrossprod(density$Xhp, res0$Beta[k,,])
+                for(l in 1:npred){
+                    aux0 <- norMix(mu = c(mu.h[l,]), sigma = sqrt(res0$Sigma2[k,]), w = res0$P[k,])
+                    dens.h[,l] <- dnorMix(density$grid.h, aux0)
+                    meanfun.h[l] <- sum(res0$P[k,]*t(mu.h[l,]))
+                }
+            }
+        }
+
+        aux <- rexp(nd, 1)
+        weights <- aux/sum(aux)
+
+        arocddp <- apply(weights*outer(up, p, "<="), 2, sum)
+        aaucddp <- 1 - sum(weights*up)
+
+        if(pauc$compute) {
+            if(pauc$focus == "FPF"){
+                paucddp <- pauc$value - sum(weights*pmin(pauc$value, up))
+            } else{
+                arocp[1] <- 0
+                arocp[np] <- 1
+                rocapp <- approxfun(p, arocp, method = "linear")
+                p1 <- uniroot(function(x) {rocapp(x) - pauc$value}, interval = c(0, 1))$root
+                paucddp <- integrate(rocapp, lower = p1, upper = 1,
+                stop.on.error = FALSE)$value - (1 - p1)*pauc$value
+            }
+        }
+
+        res <- list()
+        res$ROC <- arocddp
+        res$AUC <- aaucddp
+        if(pauc$compute) {
+            res$pAUC <- paucddp
+        }
+        if(density$compute) {
+            res$dens.h <- dens.h
+            res$meanfun.h <- meanfun.h
+        }
+        res
+    }
+
+    parallel <- match.arg(parallel)
+
     pauc <- do.call("pauccontrol", pauc)    
     density <- do.call("densitycontrol.aroc", density)
     mcmc <- do.call("mcmccontrol", mcmc)
@@ -30,7 +103,7 @@ mcmc = mcmccontrol()) {
     }
     
     # Variables in the model
-    names.cov <- all.vars(formula.h)[-1]
+    names.cov <- get_vars_formula(formula.h) #all.vars(formula.h)[-1]
     
     if(sum(is.na(match(c(marker, names.cov, group), names(data)))))
         stop("Not all needed variables are supplied in data")
@@ -43,8 +116,7 @@ mcmc = mcmccontrol()) {
     omit.d <- apply(data.new[data.new[,group] != tag.h, c(marker, group, names.cov)], 1, anyNA)
     
     data.new <- rbind(data.new[data.new[,group] == tag.h,,drop = FALSE][!omit.h,,drop = FALSE], data.new[data.new[,group] != tag.h,,drop = FALSE][!omit.d,,drop = FALSE])
-    
-    
+        
     data.h <- data.new[data.new[,group] == tag.h,]
     data.d <- data.new[data.new[,group] != tag.h,]
     
@@ -55,10 +127,10 @@ mcmc = mcmccontrol()) {
     # Construct design matrix
     MM0 <- design.matrix.bnp(formula.h, data.h, standardise)
     X0 <- MM0$X
+    k <-  ncol(X0)
     
     # Construct design matrix in diseased population (based on healthy)
     X1 <- predict(MM0, data.d)$X
-    k <-  ncol(X0)
     
     data.h.marker <- data.h[,marker]
     data.d.marker <- data.d[,marker]
@@ -185,115 +257,6 @@ mcmc = mcmccontrol()) {
         mcmc = mcmc,
         standardise = standardise)
     }
-    
-    nsimf <- mcmc$nsave
-    
-    y1 <- data.d.marker
-    
-    if(L > 1){
-        prob <- res0$P
-        beta <- res0$Beta
-        sd <- sqrt(res0$Sigma2)
-    }
-    if(L == 1){
-        prob <- NULL
-        beta <- res0$Beta
-        sd <- sqrt(res0$Sigma2)
-    }
-    
-    if(L > 1){
-        udddp <- matrix(0, nrow = n1, ncol = nsimf)
-        
-        for(l in 1:nsimf) {
-            #udddp[,l] <- 1 - apply(t(prob[l,]*t(pnorm(y1, mean = X1%*%t(beta[l,,]), sd = rep(sd[l,], each = length(y1))))),1, sum)
-            udddp[,l] <- 1 - apply(t(prob[l,]*t(pnorm(y1, mean = tcrossprod(X1, beta[l,,]), sd = rep(sd[l,], each = length(y1))))),1, sum)
-        }
-        weights <- matrix(0, nrow = n1, ncol = nsimf)
-        for(l in 1:nsimf) {
-            aux1 <- rexp(n1,1)
-            weights[,l] <- aux1/sum(aux1)
-        }
-        arocbbddp <- matrix(0, nrow = np, ncol = nsimf)
-        aucddp <- numeric(nsimf)
-        if(pauc$compute) {
-            paucddp <- numeric(nsimf)
-            if(pauc$focus == "FPF"){
-                # Truncated pv
-                tudddp <- matrix(pmin(pauc$value, udddp), nrow = n1)
-            }
-        }
-        
-        for(j in 1:np) {
-            arocbbddp[j,] <- colSums(weights*(udddp<=p[j]))
-        }
-        
-        aucddp <- 1 - colSums(weights*udddp)
-        if(pauc$compute) {
-            if(pauc$focus == "FPF"){
-                paucddp <- pauc$value - colSums(weights*tudddp)
-            } else{
-                for(l in 1:nsimf){
-                    arocbbddp[1,] <- 0; arocbbddp[np,] <- 1
-                    rocapp <- approxfun(p, arocbbddp[,l], method = "linear")
-                    p1 <- uniroot(function(x) {rocapp(x) - pauc$value}, interval = c(0, 1))$root
-                    paucddp[l] <- integrate(rocapp, lower = p1, upper = 1,
-                    stop.on.error = FALSE)$value - (1 - p1)*pauc$value
-                }
-            }
-        }
-    }
-    
-    if(L == 1){
-        up <- matrix(0, nrow = n1, ncol = nsimf)
-        for(k in 1:nsimf) {
-            up[,k] = 1 - pnorm(data.d.marker, mean = X1%*%beta[k,], sd = sd[k])
-        }
-        
-        weights <- matrix(0, nrow = n1, ncol = nsimf)
-        for(l in 1:nsimf) {
-            aux1 <- rexp(n1,1)
-            weights[,l] <- aux1/sum(aux1)
-        }
-        
-        arocbbddp <- matrix(0, nrow = np, ncol = nsimf)
-        aucddp <- numeric(nsimf)
-        
-        for(j in 1:np) {
-            arocbbddp[j,] <- colSums(weights*(up<=p[j]))
-        }
-        
-        aucddp <- 1 - colSums(weights*up)
-        
-        if(pauc$compute) {
-            paucddp <- numeric(nsimf)
-            if(pauc$focus == "FPF"){
-                # Truncated pv
-                tup <- matrix(pmin(pauc$value, up), nrow = n1)
-            }
-        }
-        
-        if(pauc$compute) {
-            if(pauc$focus == "FPF"){
-                paucddp <- pauc$value - colSums(weights*tup)
-            } else{
-                for(l in 1:nsimf){
-                    arocbbddp[1,] <- 0; arocbbddp[np,] <- 1
-                    rocapp <- approxfun(p, arocbbddp[,l], method = "linear")
-                    p1 <- uniroot(function(x) {rocapp(x) - pauc$value}, interval = c(0, 1))$root
-                    paucddp[l] <- integrate(rocapp, lower = p1, upper = 1,
-                    stop.on.error = FALSE)$value - (1 - p1)*pauc$value
-                }
-            }
-        }
-    }
-    
-    AROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
-    AROC[,1] <- apply(arocbbddp, 1,mean)
-    AROC[,2] <- apply(arocbbddp, 1, quantile, prob = 0.025)
-    AROC[,3] <- apply(arocbbddp, 1, quantile, prob = 0.975)
-    AUC <- c(mean(aucddp), quantile(aucddp,c(0.025,0.975)))
-    names(AUC) <- c("est","ql", "qh")
-    
     if(density$compute) {
         if(!all(is.na(density$newdata)) && !inherits(density$newdata, "data.frame"))
             stop("Newdata (argument density) must be a data frame")
@@ -304,41 +267,82 @@ mcmc = mcmccontrol()) {
         } else {
             newdata <- na.omit(density$newdata[,names.cov,drop=FALSE])
         }
-        X0p <- predict(MM0, newdata = newdata)$X
+        density$Xhp <- predict(MM0, newdata = newdata)$X
         npred <- nrow(newdata)
         
         if(all(is.na(density$grid.h))) {
-            grid.h <- seq(min(data.h.marker) - 1, max(data.h.marker) + 1, len = 200)
-        } else {
-            grid.h <- density$grid.h
+            density$grid.h <- seq(min(data.h.marker) - 1, max(data.h.marker) + 1, len = 200)
         }
-        
-        dens.h <- array(0, c(length(grid.h), nsimf, npred))
-        meanfun.h <- matrix(0, nrow = npred, ncol = nsimf)
-        
-        for(k in 1:nsimf){
-            if(L == 1){
-                mu.h <- X0p%*%beta[k,]
-                meanfun.h[,k] = mu.h
-                for(l in 1:npred){
-                    dens.h[, k, l] <- dnorm(grid.h, mean = mu.h[l], sd = sd[k])
-                }
-            }
-            if(L > 1){
-                mu.h <- tcrossprod(X0p, beta[k,,]) #X0p%*%t(beta[k,,])
-                for(l in 1:npred){
-                    aux0 <- norMix(mu = c(mu.h[l,]), sigma = sd[k,], w = prob[k,])
-                    dens.h[, k, l] <- dnorMix(grid.h, aux0)
-                    meanfun.h[l,k] <- sum(prob[k,]*t(mu.h[l,]))
-                }
-            }
-        }
-        
-        meanfun.h.m <- apply(meanfun.h, 1, mean)
-        meanfun.h.l <- apply(meanfun.h, 1, quantile, prob = 0.025)
-        meanfun.h.h <- apply(meanfun.h, 1, quantile, prob = 0.975)
     }
-    
+
+    if(mcmc$nsave > 0) {
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
+            }
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
+        }
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(mcmc$nsave), doMCMCROC, res0 = res0, L = L, yd = data.d.marker, Xd = X1, pauc = pauc, density = density, p = p, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(mcmc$nsave), doMCMCROC, res0 = res0, L = L, yd = data.d.marker, Xd = X1, pauc = pauc, density = density, p = p)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                        if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(mcmc$nsave), doMCMCROC, res0 = res0, L = L, yd = data.d.marker, Xd = X1, pauc = pauc, density = density, p = p)
+                        }                        
+                    }
+                }
+            } else {
+                lapply(seq_len(mcmc$nsave), doMCMCROC, res0 = res0, L = L, yd = data.d.marker, Xd = X1, pauc = pauc, density = density, p = p)
+            }
+
+        resBoot <- simplify2array(resBoot)    
+        arocbbddp <- simplify2array(resBoot["ROC",])
+        aucddp <- unlist(resBoot["AUC",])
+        if(pauc$compute){
+            paucddp <- unlist(resBoot["pAUC",])
+        }
+        if(density$compute){
+            dens.h <- aperm(simplify2array(resBoot["dens.h",]), c(1,3,2))
+            meanfun.h <- simplify2array(resBoot["meanfun.h",])
+
+            meanfun.h.m <- apply(meanfun.h, 1, mean)
+            meanfun.h.l <- apply(meanfun.h, 1, quantile, prob = 0.025)
+            meanfun.h.h <- apply(meanfun.h, 1, quantile, prob = 0.975)
+        }
+
+    } else {
+        stop("nsave should be larger than zero.")
+    }
+
+    AROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
+    AROC[,1] <- apply(arocbbddp, 1,mean)
+    AROC[,2] <- apply(arocbbddp, 1, quantile, prob = 0.025)
+    AROC[,3] <- apply(arocbbddp, 1, quantile, prob = 0.975)
+    AUC <- c(mean(aucddp), quantile(aucddp,c(0.025,0.975)))
+    names(AUC) <- c("est","ql", "qh")
+
     res <- list()
     res$call <- match.call()
     res$data <- data
@@ -384,7 +388,7 @@ mcmc = mcmccontrol()) {
     if(density$compute) {
         res$newdata <- newdata
         res$reg.fun.h <- data.frame(est = meanfun.h.m, ql = meanfun.h.l, qh = meanfun.h.h)
-        res$dens <- list(grid = grid.h, dens = dens.h)
+        res$dens <- list(grid = density$grid.h, dens = dens.h)
     }
     if(compute.lpml | compute.WAIC | compute.DIC) {
         term <- inf_criteria(y = data.h.marker, X = X0, res = res0)
@@ -419,10 +423,10 @@ mcmc = mcmccontrol()) {
     
     # Results of the fit in the healthy population (neeeded to calculate predictive checks or other statistics)
     if(L > 1){
-        res$fit <- list(formula = formula.h, mm = MM0, beta = beta, sd = sd, probs = prob)
+        res$fit <- list(formula = formula.h, mm = MM0, beta = res0$Beta, sd = sqrt(res0$Sigma), probs = res0$P)
     }
     if(L == 1){
-        res$fit <- list(formula = formula.h, mm = MM0, beta = beta, sd = sd)
+        res$fit <- list(formula = formula.h, mm = MM0, beta = res0$Beta, sd = sqrt(res0$Sigma))
     }
     res$data_model <- list(y = list(h = data.h.marker, d = data.d.marker), X = list(h = X0, d = X1))
     class(res) <- c("AROC.bnp", "AROC")

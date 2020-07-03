@@ -8,13 +8,17 @@ Pooled ROC based threshold values.
 This function implements methods for estimating pooled ROC-based threshold values.
 }
 \usage{
-compute.threshold.pooledROC(object, criterion = c("FPF", "YI"), FPF)
+compute.threshold.pooledROC(object, criterion = c("FPF", "YI"), FPF,
+  parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{object}{An object of class \code{pooledROC} as produced by \code{\link{pooledROC.BB}}, \code{\link{pooledROC.emp}}, \code{\link{pooledROC.kernel}}, or \code{\link{pooledROC.dpm}} functions.}
   \item{criterion}{A character string indicating if the threshold value should be computed based on the Youden index (``YI''), or for fixed false positive fractions (``FPF''). }
   \item{FPF}{For \code{criterion = "FPF"}, a numeric vector with the FPF at which to calculate the threshold values. Atomic values are also valid.}
+  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
 Estimates pooled ROC-based threshold values based on two different criteria, namely, the Youden index (YI) and the one that gives rise to a pre-specified FPF.

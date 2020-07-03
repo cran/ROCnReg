@@ -1,7 +1,41 @@
 pooledROC.BB <-
-function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol()) {
-    
+function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+    compute.ROC <- function(i, yh, yd, pauc, p = seq(0,1,l=101)) {
+        n0 <- length(yh)
+        n1 <- length(yd)
+
+        q <- rexp(n0, 1)
+        weights.h <- q/sum(q)
+        
+        q1 <- rexp(n1, 1)
+        weights.d <- q1/sum(q1)
+        
+        u <- 1 - ewcdf(yh, weights.h)(yd)
+        rocbbpool <- ewcdf(u, weights.d)(p)
+        aucbbpool <- sum((1-u)* weights.d)
+
+        if(pauc$compute) {
+            if(pauc$focus == "FPF") {
+                paucbbpool <- sum((pauc$value - pmin(u, pauc$value))*weights.d)
+            } else {
+                u1 <- 1 - ewcdf(yd, weights.d)(yh)
+                paucbbpool <- sum((pmax(u1, pauc$value)-pauc$value)*weights.h)
+            }
+        }
+        res <- list()
+        res$weights.d <- weights.d
+        res$weights.h <- weights.h
+        res$ROC <- rocbbpool
+        res$AUC <- aucbbpool
+        if(pauc$compute) {
+            res$pAUC <- paucbbpool
+        }
+        res
+    }
+
     pauc <- do.call("pauccontrol", pauc)
+    
+    parallel <- match.arg(parallel)
     
     # Obtain the marker in healthy and diseased
     yh <- data[,marker][data[,group] == tag.h]
@@ -18,44 +52,61 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pa
     n0 <- length(yh.wom)
     
     np <- length(p)
-    
-    u <- matrix(0, nrow = n1, ncol = B)
-    u1 <- matrix(0, nrow = n0, ncol = B)
 
-    weights.h <- matrix(0, nrow = n0, ncol = B)
-    weights.d <- matrix(0, nrow = n1, ncol = B)
-    
-    rocbbpool <- matrix(0, nrow = np, ncol = B)
-    aucbbpool <- numeric(B)
-    
-    if(pauc$compute) {
-        paucbbpool <- numeric(B)
-    }
-    
-    for(l in 1:B) {
-        q <- rexp(n0, 1)
-        weights.h[,l] <- q/sum(q)
-        
-        q1 <- rexp(n1, 1)
-        weights.d[,l] <- q1/sum(q1)
-        
-        #u[,l] <- apply(outer(yh.wom, yd.wom, ">"), 2, weighted.mean, w = weights.h[,l])
-        #rocbbpool[,l] <- apply(outer(u[,l], p, "<="), 2, weighted.mean, w = weights.d[,l])
-        #I was unable to find the ewcdf function
-        u[,l] <- 1 - ewcdf(yh.wom, weights.h[,l])(yd.wom)
-        rocbbpool[,l] <- ewcdf(u[,l], weights.d[,l])(p)
-        aucbbpool[l] <- sum((1-u[,l])* weights.d[,l])
+    if(B > 0) {        
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
+            }
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
+        }
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
 
-		if(pauc$compute) {
-			if(pauc$focus == "FPF") {
-				paucbbpool[l] <- sum((pauc$value - pmin(u[,l], pauc$value))*weights.d[,l])
-			} else {
-				u1[,l] <- 1 - ewcdf(yd.wom, weights.d[,l])(yh.wom)
-				paucbbpool[l] <- sum((pmax(u1[,l], pauc$value)-pauc$value)*weights.h[,l])
-			}
-		} 
-        
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(B), compute.ROC, yh = yh.wom, yd = yd.wom, pauc = pauc, p = p, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(B), compute.ROC, yh = yh.wom, yd = yd.wom, pauc = pauc, p = p)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                        if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(B), compute.ROC, yh = yh.wom, yd = yd.wom, pauc = pauc, p = p)
+                        }                         
+                    }
+                }
+            } else {
+                lapply(seq_len(B), compute.ROC, yh = yh.wom, yd = yd.wom, pauc = pauc, p = p)
+            }
+
+        resBoot <- simplify2array(resBoot)
+        weights.d <- simplify2array(resBoot["weights.d",])    
+        weights.h <- simplify2array(resBoot["weights.h",])    
+        rocbbpool <- simplify2array(resBoot["ROC",])
+        aucbbpool <- unlist(resBoot["AUC",])
+        if(pauc$compute){
+            paucbbpool <- unlist(resBoot["pAUC",])
+        }
+    } else {
+        stop("B should be larger than zero.")
     }
+
     poolROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
     poolROC[,1] <- apply(rocbbpool, 1, mean)
     poolROC[,2] <- apply(rocbbpool, 1, quantile, 0.025)

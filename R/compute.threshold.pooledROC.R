@@ -1,5 +1,5 @@
 compute.threshold.pooledROC <-
-function(object, criterion = c("FPF", "YI"), FPF) {
+function(object, criterion = c("FPF", "YI"), FPF, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	object.class <- class(object)[1]
 	if (!(object.class %in% c("pooledROC.BB", "pooledROC.emp", "pooledROC.emp", "pooledROC.kernel", "pooledROC.dpm"))) {
 		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
@@ -11,9 +11,9 @@ function(object, criterion = c("FPF", "YI"), FPF) {
 	}
 	method <- paste0("compute.threshold.", criterion, ".", object.class)
 	if(criterion == "YI") {
-		res <- eval(parse(text = method))(object = object)
+		res <- eval(parse(text = method))(object = object, parallel = parallel, ncpus = ncpus, cl = cl)
 	} else {
-		res <- eval(parse(text = method))(object = object, FPF = FPF)
+		res <- eval(parse(text = method))(object = object, FPF = FPF, parallel = parallel, ncpus = ncpus, cl = cl)
 	}
 	res$call <- match.call()
 	res

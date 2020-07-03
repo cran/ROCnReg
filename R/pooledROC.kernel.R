@@ -1,8 +1,20 @@
 pooledROC.kernel <-
-function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"), B = 1000, method = c("ncoutcome","coutcome"), pauc = pauccontrol()) {
+function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"), B = 1000, method = c("ncoutcome","coutcome"), pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     
-    pauc <- do.call("pauccontrol", pauc)
-    
+    doBoostROC <- function(i, data, method, pauc, p, bw) {
+        data.boot <- bootstrap.sample(data, "group", method = method)
+        yhb <- data.boot$y[data.boot$group == 0]
+        ydb <- data.boot$y[data.boot$group == 1]
+        obj.boot <- compute.ROC(yh = yhb, yd = ydb, pauc = pauc, p = p, bw = bw)
+
+        res <- list()
+        res$ROC <- obj.boot$ROC
+        res$AUC  <- obj.boot$AUC
+        if(pauc$compute) {
+            res$pAUC  <- obj.boot$pAUC
+        }
+        res
+    }
     compute.ROC <- function(yh, yd, pauc, p, bw) {
         if(bw == "SRT") {
             h0 <- suppressWarnings(bw.nrd0(x = yh))
@@ -47,8 +59,12 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"
         }
         res
     }
-    
+    pauc <- do.call("pauccontrol", pauc)
+
+    parallel <- match.arg(parallel)
+    method <- match.arg(method)
     bw <- match.arg(bw)
+
     np <- length(p)
 
     # Check if the seq of FPF is correct
@@ -76,26 +92,55 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"
     if(pauc$compute){
         pauck <- obj$pAUC
     }
-    
-    if(B > 0) {
-        rockb <- matrix(0, nrow = np, ncol = B)
-        auckb <- numeric(B)
-        if(pauc$compute){
-            pauckb <- numeric(B)
-        }
-        data.original <- data.frame(y = c(yh.wom, yd.wom), group = c(rep(0,n0), rep(1,n1)))
-        for(l in 1:B){
-            data.boot <- bootstrap.sample(data.original, "group", method = method)
-            yhb <- data.boot$y[data.boot$group == 0]
-            ydb <- data.boot$y[data.boot$group == 1]
-            obj.boot <- compute.ROC(yh = yhb, yd = ydb, pauc = pauc, p = p, bw = bw)
-            rockb[,l] <- obj.boot$ROC
-            auckb[l]  <- obj.boot$AUC
-            if(pauc$compute){
-                pu <- seq(0, pauc$value, len = np)
-                obj.boot <- compute.ROC(yh = yhb, yd = ydb, pauc = pauc, p = pu, bw = bw)
-                pauckb[l]  <- obj.boot$pAUC
+    data.original <- data.frame(y = c(yh.wom, yd.wom), group = c(rep(0,n0), rep(1,n1)))
+
+    if(B > 0) {        
+        do_mc <- do_snow <- FALSE
+        if (parallel != "no" && ncpus > 1L) {
+            if (parallel == "multicore") {
+                do_mc <- .Platform$OS.type != "windows"
+            } else if (parallel == "snow") {
+                do_snow <- TRUE
             }
+            if (!do_mc && !do_snow) {
+                ncpus <- 1L
+            }       
+            loadNamespace("parallel") # get this out of the way before recording seed
+        }
+        # Seed
+        #if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) runif(1)
+        #seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+
+        # Apply function
+        resBoot <- if (ncpus > 1L && (do_mc || do_snow)) {
+                if (do_mc) {
+                    parallel::mclapply(seq_len(B), doBoostROC, method = method, data = data.original, pauc = pauc, p = p, bw = bw, mc.cores = ncpus)
+                } else if (do_snow) {                
+                    if (is.null(cl)) {
+                        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+                        if(RNGkind()[1L] == "L'Ecuyer-CMRG") {
+                            parallel::clusterSetRNGStream(cl)
+                        }
+                        res <- parallel::parLapply(cl, seq_len(B), doBoostROC, method = method, data = data.original, pauc = pauc, p = p, bw = bw)
+                        parallel::stopCluster(cl)
+                        res
+                    } else {
+                        if(!inherits(cl, "cluster")) {
+                            stop("Class of object 'cl' is not correct")
+                        } else {
+                            parallel::parLapply(cl, seq_len(B), doBoostROC, method = method, data = data.original, pauc = pauc, p = p, bw = bw)
+                        }
+                    }
+                }
+            } else {
+                lapply(seq_len(B), doBoostROC, method = method, data = data.original, pauc = pauc, p = p, bw = bw)
+            }
+
+        resBoot <- simplify2array(resBoot)    
+        rockb <- simplify2array(resBoot["ROC",])
+        auckb <- unlist(resBoot["AUC",])
+        if(pauc$compute){
+            pauckb <- unlist(resBoot["pAUC",])
         }
     }
     columns <-switch(as.character(B > 0), "TRUE" = 1:3, "FALSE" = 1)

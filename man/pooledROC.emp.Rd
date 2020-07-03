@@ -10,7 +10,8 @@ This function estimates the pooled ROC curve using the empirical estimator propo
 \usage{
 pooledROC.emp(marker, group, tag.h, data, 
 	p = seq(0, 1, l = 101), B = 1000, 
-    method = c("ncoutcome", "coutcome"), pauc = pauccontrol())
+    method = c("ncoutcome", "coutcome"), pauc = pauccontrol(),
+  	parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 \arguments{
  \item{marker}{A character string with the name of the diagnostic test variable.}
@@ -21,6 +22,9 @@ pooledROC.emp(marker, group, tag.h, data,
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
   \item{method}{A character string specifying if bootstrap resampling (for the confidence intervals) should be done with or without regard to the disease status (``coutcome'' or ``noutcome''). In both cases, a naive bootstrap is used. By default, the resampling is done conditionally on the disease status.}
  \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
+ \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
+  \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
+  \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
 Estimates the pooled ROC curve (ROC) defined as
