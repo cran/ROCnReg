@@ -11,3 +11,7 @@
 	CHANGES in `ROCnReg' VERSION 1.0-2
 		
 	o	 Options for parallel processing have been implemented (using R-package parallel).
+
+	CHANGES in `ROCnReg' VERSION 1.0-3
+		
+	o	Bugs corrected

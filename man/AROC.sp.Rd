@@ -89,7 +89,7 @@ data = newpsa,
 est.cdf.h = "normal",
 pauc = pauccontrol(compute = TRUE, focus = "FPF", value = 0.5),
 p = seq(0,1,l=101), 
-B = 10)
+B = 500)
 
 summary(m3)
 

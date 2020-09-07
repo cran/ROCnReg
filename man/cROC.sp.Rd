@@ -96,7 +96,7 @@ newpsa <- psa[!duplicated(psa$id, fromLast = TRUE),]
 newpsa$l_marker1 <- log(newpsa$marker1)
 
 # Covariate for prediction
-agep <- seq(min(newpsa$age), max(newpsa$age), length = 5)
+agep <- seq(min(newpsa$age), max(newpsa$age), length = 50)
 df.pred <- data.frame(age = agep)
 
 \donttest{
@@ -109,7 +109,7 @@ cROC_sp_normal <- cROC.sp(formula.h = l_marker1 ~ age,
                           est.cdf = "normal",
                           pauc = list(compute = TRUE, value = 0.5, focus = "FPF"),
                           p = seq(0, 1, l = 101), 
-                          B = 10)
+                          B = 500)
 summary(cROC_sp_normal)
 
 plot(cROC_sp_normal)

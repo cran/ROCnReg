@@ -4,9 +4,9 @@ get_vars_formula <- function(formula) {
         formula <- as.formula(formula)
 
     tf <- terms.formula(formula, specials = c("f", "ns", "bs"))
-    if(!is.null(attr(tf,"specials")$ns) | !is.null(attr(tf,"specials")$bs)) {
-        stop("'ns' (natural splines) or 'bs' (B-splines) are not allowed in the formula. Please use 'f' instead.")
-    }
+    #if(!is.null(attr(tf,"specials")$ns) | !is.null(attr(tf,"specials")$bs)) {
+    #    stop("'ns' (natural splines) or 'bs' (B-splines) are not allowed in the formula. Please use 'f' instead.")
+    #}
 
     if (attr(tf, "response") > 0) {
         marker <- as.character(attr(tf, "variables")[2])
