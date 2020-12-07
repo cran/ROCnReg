@@ -12,8 +12,8 @@
 \tabular{ll}{
 Package: \tab ROCnReg\cr
 Type: \tab Package\cr
-Version: \tab 1.0-3\cr
-Date: \tab 2020-09-07\cr
+Version: \tab 1.0-4\cr
+Date: \tab 2020-12-06\cr
 License: \tab GPL\cr
 }
 }

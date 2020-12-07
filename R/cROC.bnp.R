@@ -584,7 +584,7 @@ cl = NULL) {
         meanfun.d <- simplify2array(resBoot["meanfun.d",])
         if(density$compute){
             dens.h <- aperm(simplify2array(resBoot["dens.h",]), c(1,3,2))
-            dens.d <- aperm(simplify2array(resBoot["dens.h",]), c(1,3,2))
+            dens.d <- aperm(simplify2array(resBoot["dens.d",]), c(1,3,2))
         }
 
     } else {

@@ -1,6 +1,6 @@
-0f9e335a09783481a6503bee68166ff2 *DESCRIPTION
+b1a24a715fc84f829930ed496a590688 *DESCRIPTION
 0da07053bc6da60d818f9e63d903a404 *NAMESPACE
-4f7f8f0f6f2f3a8f93db6f69b4cd4239 *NEWS
+962a583a01c49b63a415856a8ba95379 *NEWS
 3f225c3e519f03e3ad7e0315f7c0b598 *R/AROC.bnp.R
 635b00121f26dbd88ee9d638278e07a2 *R/AROC.f.R
 e60cd20d180ed824494ecc842a22364e *R/AROC.kernel.R
@@ -11,7 +11,7 @@ dfd18e675594e288782d13c7e18eea26 *R/Gk.R
 d1fe33099b6abeab3e83ff77ae8ddf25 *R/bddp.R
 5102ebb030439fa9783ba529a36f3c3a *R/bootstrap.sample.R
 f3b53009f7a3cce69be1592450e63a25 *R/cF.R
-cfef9a0c185c9e1b8b94cfede1e35b5c *R/cROC.bnp.R
+c3665106e7f6075e7e4bf4a01726fb2e *R/cROC.bnp.R
 3c2ed5874dc5d3b9fa19b27cdbbfb909 *R/cROC.kernel.R
 6e6b918f87a8d05b30aa4d4a594f81fe *R/cROC.sp.R
 077a90be495e06c712d8bd1d9f192bfc *R/cROCData.R
@@ -93,13 +93,13 @@ e06a76710ec8411a283fe60a063b5083 *R/survival.R
 2a1e7682c65685fd3bf61e5a4926599a *R/waic_dpm.R
 eee880bd5ba5e534bd88c6cad302f622 *R/waicnp.R
 8b83d907ca91dc3574294b44415aa802 *R/waicp.R
-8dcfe01d34ae7c4d2790d63452cc8195 *build/partial.rdb
+dafdbc572cae10e7d405965aba563bbf *build/partial.rdb
 ca03834f42c63810acadad3bcf11eda2 *data/endosyn.rda
 6bed52e17284d5cf9a61c23d995adfa3 *data/psa.rda
 83ad8fa4926bbd988ade098ff9cc950d *man/AROC.bnp.Rd
 0022e303e290a5f02c03fa7b0216a9c7 *man/AROC.kernel.Rd
 d4f2288944bbf2272a0631be2f8aaeb9 *man/AROC.sp.Rd
-ee15e30d4276b39022170a7a29bd2034 *man/ROCnReg-package.Rd
+44efc37fc2e8622932ca85be592591ed *man/ROCnReg-package.Rd
 ab9d4339c48f45e23e85577f2aba0daa *man/cROC.bnp.Rd
 432ff2d3ebf209309bedcc48ff94d80d *man/cROC.kernel.Rd
 7e06cc78a391374395c120dbacf55efa *man/cROC.sp.Rd
@@ -125,7 +125,7 @@ a54b76d41efcb99900b9b672e9ad6370 *man/pooledROC.kernel.Rd
 0a6d05d942bf8014833572b50241bb0e *man/print.pooledROC.Rd
 faf25e5ada08a162251c4024dccba679 *man/priorcontrol.bnp.Rd
 8b750dc7cda8175666ac571c23661728 *man/priorcontrol.dpm.Rd
-fbf19c097670af0dcfbf77065221bd1f *man/psa.Rd
+2c7cf2118cccaa0c014e46505bee677b *man/psa.Rd
 e1633df5858dbc0e6beab75a8463b417 *man/summary.AROC.Rd
 eff3c3075bba9bcfd69bca2917b3b07b *man/summary.cROC.Rd
 f0aa8af73aa0955625991bfc57c6877b *man/summary.pooledROC.Rd

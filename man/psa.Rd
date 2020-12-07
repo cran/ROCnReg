@@ -23,7 +23,7 @@ The dataset contains 71 prostate cases and 71 controls who participated in a lun
 The CARET enrolled 12000 men, aged between 50 and 65 years, at high risk of lung cancer. For each subject on the study, serum samples were drawn at baseline and at two-year intervals after that. The data presented here represent a subsample of the original sample, and it was reported by Etzioni et al. (1999). It contains 71 cases of prostate cancer that occurred during the study. All these cases had, at least, three and up to eight serum samples. As far as controls are concerned, they were selected from the participants of the CARET study verifying that they had not been diagnosed with prostate cancer by the time of the original study, and the selection was done by matching to cases on date of birth and number of serum samples available for analysis.
 }
 \source{
-The dataset can be downloaded from \url{https://research.fhcrc.org/diagnostic-biomarkers-center/en/datasets.html}.
+The dataset can be downloaded from \url{https://research.fredhutch.org/diagnostic-biomarkers-center/en/datasets.html}.										
 }
 \references{
 Pepe, M. S. (2003). The Statistical Evaluation of Medical Tests for Classification and Prediction. Oxford Statistical Science Series. Oxford University Press, New York. 
