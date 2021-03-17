@@ -1,5 +1,5 @@
 compute.threshold.YI.pooledROC.BB <-
-function(object, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
   
   doMCMCTH <- function(k, y.h, weights.h, y.d, weights.d, grid) {
     F0bb <- ewcdf(y.h, weights.h[,k])
@@ -86,11 +86,13 @@ function(object, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) 
   } else {
     stop("B should be larger than zero.")
   }
-  
-  thresholds <- c(mean(thresholds.s), quantile(thresholds.s, c(0.025,0.975)))
-  YI <- c(mean(YI.s), quantile(YI.s, c(0.025,0.975)))
-  FPF <- c(mean(FPF.s), quantile(FPF.s, c(0.025,0.975)))
-  TPF <- c(mean(TPF.s), quantile(TPF.s, c(0.025,0.975)))
+
+  alpha <- (1-ci.level)/2
+
+  thresholds <- c(mean(thresholds.s), quantile(thresholds.s, c(alpha, 1-alpha)))
+  YI <- c(mean(YI.s), quantile(YI.s, c(alpha, 1-alpha)))
+  FPF <- c(mean(FPF.s), quantile(FPF.s, c(alpha, 1-alpha)))
+  TPF <- c(mean(TPF.s), quantile(TPF.s, c(alpha, 1-alpha)))
 
   names(thresholds) <- names(YI) <- names(FPF) <- names(TPF) <- c("est","ql", "qh")
 

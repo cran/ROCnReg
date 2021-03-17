@@ -9,6 +9,13 @@ function(x,...) {
 	if(!is.null(x$pAUC)) {
 		cat(paste0("\n", x$pAUC))
 	}
+	if(x$bayesian) {
+		cat("\n * Credible level: ", x$ci.level)
+	} else {
+		if(x$ci.fit) {
+			cat("\n * Confidence level: ", x$ci.level)
+		}
+	}
 	if(!is.null(x$bws)) {
 		cat("\n\n")
 		print(x$bws, quote = FALSE, right = TRUE, na.print = "", print.gap = 5)

@@ -9,7 +9,7 @@ This function estimates the covariate-adjusted ROC curve (AROC) using the nonpar
 }
 \usage{
 AROC.bnp(formula.h, group, tag.h, data, standardise = TRUE, 
-  p = seq(0, 1, l = 101), compute.lpml = FALSE, compute.WAIC = FALSE, 
+  p = seq(0, 1, l = 101), ci.level = 0.95, compute.lpml = FALSE, compute.WAIC = FALSE, 
   compute.DIC = FALSE, pauc = pauccontrol(), density = densitycontrol.aroc(),
   prior.h = priorcontrol.bnp(), mcmc = mcmccontrol(),
   parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
@@ -22,6 +22,7 @@ AROC.bnp(formula.h, group, tag.h, data, standardise = TRUE,
   \item{data}{ A data frame representing the data and containing all needed variables.}
   \item{standardise}{A logical value. If TRUE both the test outcomes and the continuous covariates assumed to have a linear effect are standardised (i.e., the resulting variables have mean zero and standard deviation of one). The default is TRUE.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-adjusted ROC curve.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the level for the credible interval. The default is 0.95.}
   \item{compute.lpml}{A logical value. If TRUE, the log pseudo marginal likelihood (LPML, Geisser and Eddy, 1979) and the conditional predictive ordinates (CPO) are computed.}
   \item{compute.WAIC}{A logical value. If TRUE, the widely applicable information criterion (WAIC, Gelman et al., 2014; Watanabe, 2010) is computed.}
   \item{compute.DIC}{A logical value. If TRUE, the deviance information criterion (DIC)(Celeux et al., 2006, Spiegelhalter et al., 2002) is computed.}
@@ -63,13 +64,14 @@ As a result, the function provides a list with the following components:
 \item{group}{The value of the argument \code{group} used in the call.}
 \item{tag.h}{The value of the argument \code{tag.h} used in the call.}
 \item{p}{Set of false positive fractions (FPF) at which the covariate-adjusted ROC curve (AROC) has been estimated.}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
 \item{prior}{A list returning the hyperparameter values.}
-\item{ROC}{Estimated covariate-adjusted ROC curve (AROC) (posterior mean) and 95\% pointwise credible band.}
-\item{AUC}{Estimated area under the covariate-adjusted ROC curve (AAUC) (posterior mean), and 95\% credible interval.}
-\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve (pAAUC) (posterior mean) and 95\% credible
+\item{ROC}{Estimated covariate-adjusted ROC curve (AROC) (posterior mean) and \code{ci.level}*100\% pointwise credible band.}
+\item{AUC}{Estimated area under the covariate-adjusted ROC curve (AAUC) (posterior mean), and \code{ci.level}*100\% credible interval.}
+\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve (pAAUC) (posterior mean) and \code{ci.level}*100\% credible
 interval. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 \item{newdata}{If \code{compute} is set to \code{TRUE} in the argument \code{density}, a data frame containing the values of the covariates at which the regression function and conditional densities were computed (see below).}
-\item{reg.fun.h}{If \code{compute} is set to \code{TRUE} in the argument \code{density}, a data frame containing the predicted regression function (posterior mean) and 95\% pointwise credible band.}
+\item{reg.fun.h}{If \code{compute} is set to \code{TRUE} in the argument \code{density}, a data frame containing the predicted regression function (posterior mean) and \code{ci.level}*100\% pointwise credible band.}
 \item{dens}{If \code{compute} is set to \code{TRUE} in the argument \code{density}, a list with two components (only for the healthy population): \code{grid} (grid of test outcomes where the densities were evaluated) and \code{dens} (MCMC realisations of the corresponding conditional densities).}
 \item{lpml}{If computed, a list with two components: the log pseudo marginal likelihood (LPML) and the conditional predictive ordinates (CPO).}
 \item{WAIC}{If computed, widely applicable information criterion (WAIC) and associated complexity penalty (pW).}
@@ -128,7 +130,7 @@ AROC_bnp <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               pauc = pauccontrol(compute = TRUE, focus = "FPF", value = 0.5),
               density = densitycontrol.aroc(compute = TRUE, grid.h = NA, newdata = NA),
               prior.h = priorcontrol.bnp(m0 = rep(0, 4), S0 = 10*diag(4), nu = 6, Psi = diag(4),
-              a = 2, b = 2, aalpha = 2, balpha = 2, L =10),
+              a = 2, b = 0.5, alpha = 1, L =10),
               mcmc = mcmccontrol(nsave = 500, nburn = 100, nskip = 1))
 
 summary(AROC_bnp)
@@ -149,7 +151,7 @@ AROC_bnp <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               pauc = pauccontrol(compute = FALSE, focus = "FPF", value = 0.5),
               density = densitycontrol.aroc(compute = FALSE, grid.h = NA, newdata = NA),
               prior.h = priorcontrol.bnp(m0 = rep(0, 4), S0 = 10*diag(4), nu = 6, Psi = diag(4),
-              a = 2, b = 2, aalpha = 2, balpha = 2, L =10),
+              a = 2, b = 0.5, alpha = 1, L =10),
               mcmc = mcmccontrol(nsave = 50, nburn = 10, nskip = 1))
 
 summary(AROC_bnp)

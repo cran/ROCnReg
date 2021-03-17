@@ -1,5 +1,5 @@
 cROC.kernel <-
-function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), data, newdata, pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), data, newdata, pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     doBoostROC <- function(i, marker, covariate, group, tag.h, bw, regtype, croc, newdata, pauc, p) {
         
         data.boot.d <- croc$data.d
@@ -126,6 +126,13 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
     regtype.aux <- switch(regtype, "LC" = "lc", "LL" = "ll")
     
     names.cov <- covariate
+
+    if (inherits(data, what = 'data.frame')) {
+        data <- as.data.frame(data)
+    } else {
+        stop("The object specified in argument 'data' is not a data frame")
+    }
+    
     if(!missing(newdata) && !inherits(newdata, "data.frame"))
         stop("Newdata must be a data frame")
     if(sum(is.na(match(c(marker,names.cov,group), names(data)))))
@@ -134,6 +141,12 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
         stop("Not all needed variables are supplied in newdata")
     if(length(unique(data[,group]))!= 2)
         stop(paste(group," variable must have only two different values (for healthy and diseased individuals)"), sep="")
+
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
 
     # New data, removing missing values
     data.new <- data[,c(marker,group,covariate)]
@@ -146,6 +159,7 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
     if(missing(newdata)) {
         newdata <- cROCData(data.new, covariate, group)
     } else {
+        newdata <- as.data.frame(newdata)
         newdata <- na.omit(newdata[,covariate,drop = FALSE])
     }
     
@@ -219,15 +233,15 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
         cpAUCres[,1] <- cpaucp
     }
     if(B > 0) {
-        cROCres$ql <- apply(crocpb, c(1,2),quantile, prob=0.025)
-        cROCres$qh <- apply(crocpb, c(1,2),quantile, prob=0.975)
+        cROCres$ql <- apply(crocpb, c(1,2),quantile, prob=alpha)
+        cROCres$qh <- apply(crocpb, c(1,2),quantile, prob=1-alpha)
         
-        cAUCres[,2] <- apply(caucb, 1, quantile, prob=0.025)
-        cAUCres[,3] <- apply(caucb, 1, quantile, prob=0.975)
+        cAUCres[,2] <- apply(caucb, 1, quantile, prob=alpha)
+        cAUCres[,3] <- apply(caucb, 1, quantile, prob=1-alpha)
         
         if(pauc$compute){
-            cpAUCres[,2] <- apply(cpaucb, 1, quantile, prob=0.025)
-            cpAUCres[,3] <- apply(cpaucb, 1, quantile, prob=0.975)
+            cpAUCres[,2] <- apply(cpaucb, 1, quantile, prob=alpha)
+            cpAUCres[,3] <- apply(cpaucb, 1, quantile, prob=1-alpha)
         }
     }
     colnames(cAUCres) <- col.names
@@ -245,6 +259,8 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
     res$tag.h <- tag.h
     res$covariate <- covariate
     res$p <- p
+    res$ci.fit <- ifelse(B, TRUE, FALSE)
+    res$ci.level <- ci.level
     res$ROC <- cROCres
     res$AUC <- cAUCres
     if(pauc$compute){
@@ -257,7 +273,6 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
         attr(res$pAUC, "focus") <- pauc$focus
     }
     res$fit <- croc$fit
-    res$ci.fit <- ifelse(B, TRUE, FALSE)
     class(res) <- c("cROC.kernel", "cROC")
     res
 }

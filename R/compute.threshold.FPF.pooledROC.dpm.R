@@ -1,23 +1,23 @@
 compute.threshold.FPF.pooledROC.dpm <-
-function(object, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, FPF = 0.5, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	doMCMCTH <- function(k, res0, res1, FPF) {
-		p0 <- res0$P
-		p1 <- res1$P
+		p0 <- res0$probs
+		p1 <- res1$probs
 
 		if(is.null(p0) & is.null(p1)) {
-            thresholds.s <- qnorm(1 - FPF, mean = res0$Mu[k], sd= sqrt(res0$Sigma2[k]))
-            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$Mu[k], sd = sqrt(res1$Sigma2[k]))
+            thresholds.s <- qnorm(1 - FPF, mean = res0$mu[k], sd= res0$sd[k])
+            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$mu[k], sd = res1$sd[k])
         } else if(is.null(p0) & !is.null(p1)){
-            aux1 <- norMix(mu = res1$Mu[k,], sigma = sqrt(res1$Sigma2[k,]), w = p1[k,])
-            thresholds.s <- qnorm(1 - FPF, mean = res0$Mu[k], sd= sqrt(res0$Sigma2[k]))
+            aux1 <- norMix(mu = res1$mu[k,], sigma = res1$sd[k,], w = p1[k,])
+            thresholds.s <- qnorm(1 - FPF, mean = res0$mu[k], sd= res0$sd[k])
             TPF.s <- 1 - pnorMix(thresholds.s, aux1)
         } else if (!is.null(p0) & is.null(p1)){
-            aux0 <- norMix(mu = res0$Mu[k,], sigma = sqrt(res0$Sigma2[k,]), w = p0[k,])
+            aux0 <- norMix(mu = res0$mu[k,], sigma = res0$sd[k,], w = p0[k,])
             thresholds.s <- qnorMix(1 - FPF, aux0)
-            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$Mu[k], sd = sqrt(res1$Sigma2[k]))
+            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$mu[k], sd = res1$sd[k])
         } else {
-            aux0 <- norMix(mu = res0$Mu[k,], sigma = sqrt(res0$Sigma2[k,]), w = p0[k,])
-            aux1 <- norMix(mu = res1$Mu[k,], sigma = sqrt(res1$Sigma2[k,]), w = p1[k,])
+            aux0 <- norMix(mu = res0$mu[k,], sigma = res0$sd[k,], w = p0[k,])
+            aux1 <- norMix(mu = res1$mu[k,], sigma = res1$sd[k,], w = p1[k,])
             thresholds.s <- qnorMix(1 - FPF, aux0)
             TPF.s <- 1 - pnorMix(thresholds.s, aux1)
         }
@@ -87,21 +87,21 @@ function(object, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, 
     } else {
         stop("nsave should be larger than zero.")
     }
-
+    alpha <- (1-ci.level)/2
     np <- length(FPF)
     thresholds <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
 	rownames(thresholds) <- FPF
 
 	thresholds[,1] <- apply(thresholds.s, 1, mean)
-	thresholds[,2] <- apply(thresholds.s, 1, quantile, prob = 0.025)
-	thresholds[,3] <- apply(thresholds.s, 1, quantile, prob = 0.975)
+	thresholds[,2] <- apply(thresholds.s, 1, quantile, prob = alpha)
+	thresholds[,3] <- apply(thresholds.s, 1, quantile, prob = 1-alpha)
 
 	TPF <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
 	rownames(TPF) <- FPF
 
 	TPF[,1] <- apply(TPF.s, 1, mean)
-	TPF[,2] <- apply(TPF.s, 1, quantile, prob = 0.025)
-	TPF[,3] <- apply(TPF.s, 1, quantile, prob = 0.975)
+	TPF[,2] <- apply(TPF.s, 1, quantile, prob = alpha)
+	TPF[,3] <- apply(TPF.s, 1, quantile, prob = 1-alpha)
 
 	res <- list()
 	res$thresholds <- thresholds

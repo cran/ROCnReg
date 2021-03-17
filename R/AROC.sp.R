@@ -1,5 +1,5 @@
 AROC.sp <-
-function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     doBoostROC <- function(i, formula.h, data.h, data.d, aroc, est.cdf.h, pauc, p) {    
         data.boot.d <- data.d[sample(nrow(data.d), replace=TRUE),]
         data.boot.h <- data.h
@@ -64,6 +64,7 @@ function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pa
         res$fit <- fit0p
         res
     }
+
     pauc <- do.call("pauccontrol", pauc)
     
     est.cdf.h <- match.arg(est.cdf.h)
@@ -84,10 +85,22 @@ function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pa
     # Variables in the model
     names.cov <- get_vars_formula(formula.h) #all.vars(formula.h)[-1]
     
+    if (inherits(data, what = 'data.frame')) {
+        data <- as.data.frame(data)
+    } else {
+        stop("The object specified in argument 'data' is not a data frame")
+    }
+
     if(sum(is.na(match(c(marker, names.cov, group), names(data)))))
-    stop("Not all needed variables are supplied in data")
+        stop("Not all needed variables are supplied in data")
     if(length(unique(data[,group])) != 2)
-    stop(paste(group," variable must have only two different values (for healthy and diseased individuals)"), sep = "")
+        stop(paste(group," variable must have only two different values (for healthy and diseased individuals)"), sep = "")
+    
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
     
     # New data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
@@ -170,14 +183,14 @@ function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pa
         pAUC <- paarocp
     }
     if(B > 0) {
-        AROC[,2] <- apply(arocpb, 1, quantile, prob = 0.025)
-        AROC[,3] <- apply(arocpb, 1, quantile, prob = 0.975)
-        AUC <- c(AUC,quantile(aarocpb,c(0.025,0.975)))
+        AROC[,2] <- apply(arocpb, 1, quantile, prob = alpha)
+        AROC[,3] <- apply(arocpb, 1, quantile, prob = 1-alpha)
+        AUC <- c(AUC,quantile(aarocpb,c(alpha,1-alpha)))
         if(pauc$compute){
-            pAUC <- c(pAUC,quantile(paarocpb,c(0.025,0.975)))
+            pAUC <- c(pAUC,quantile(paarocpb,c(alpha,1-alpha)))
         }
-        coeff[,2] <- apply(coeffpb, 1, quantile, prob = 0.025)
-        coeff[,3] <- apply(coeffpb, 1, quantile, prob = 0.975)
+        coeff[,2] <- apply(coeffpb, 1, quantile, prob = alpha)
+        coeff[,3] <- apply(coeffpb, 1, quantile, prob = 1-alpha)
     }
     names(AUC) <- col.names
     if(pauc$compute){
@@ -193,6 +206,7 @@ function(formula.h, group, tag.h, data, est.cdf.h = c("normal", "empirical"), pa
     res$formula <- formula.h
     res$est.cdf.h <- est.cdf.h
     res$p <- p
+    res$ci.level <- ci.level
     res$ROC <- AROC
     res$AUC <- AUC
      if(pauc$compute){

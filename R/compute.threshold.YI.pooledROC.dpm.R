@@ -1,25 +1,25 @@
 compute.threshold.YI.pooledROC.dpm <-
-function(object, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     
     doMCMCTH <- function(k, res0, res1, grid) {
-        p0 <- res0$P
-        p1 <- res1$P
+        p0 <- res0$probs
+        p1 <- res1$probs
 
         if(is.null(p0) & is.null(p1)){
-            F0 <- pnorm(grid, mean = res0$Mu[k], sd = sqrt(res0$Sigma2[k]))
-            F1 <- pnorm(grid, mean = res1$Mu[k], sd = sqrt(res1$Sigma2[k]))
+            F0 <- pnorm(grid, mean = res0$mu[k], sd = res0$sd[k])
+            F1 <- pnorm(grid, mean = res1$mu[k], sd = res1$sd[k])
             
             dif <- F0 - F1
             
             thresholds.s <- mean(grid[which(dif == max(dif))])
             YI.s <- max(dif)
             
-            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$Mu[k], sd = sqrt(res1$Sigma2[k]))
-            FPF.s <- 1 - pnorm(thresholds.s, mean = res0$Mu[k], sd = sqrt(res0$Sigma2[k]))
+            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$mu[k], sd = res1$sd[k])
+            FPF.s <- 1 - pnorm(thresholds.s, mean = res0$mu[k], sd = res0$sd[k])
         } else if(is.null(p0) & !is.null(p1)){
-            aux1 <- norMix(mu = res1$Mu[k,], sigma = sqrt(res1$Sigma2[k,]), w = p1[k,])
+            aux1 <- norMix(mu = res1$mu[k,], sigma = res1$sd[k,], w = p1[k,])
             
-            F0 <- pnorm(grid, mean = res0$Mu[k], sd = sqrt(res0$Sigma2[k]))
+            F0 <- pnorm(grid, mean = res0$mu[k], sd = res0$sd[k])
             F1 <- pnorMix(grid, aux1)
             
             dif <- F0 - F1
@@ -28,12 +28,12 @@ function(object, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) 
             YI.s <- max(dif)
             
             TPF.s <- 1 - pnorMix(thresholds.s, aux1)
-            FPF.s <- 1 - pnorm(thresholds.s, mean = res0$Mu[k], sd = sqrt(res0$Sigma2[k]))
+            FPF.s <- 1 - pnorm(thresholds.s, mean = res0$mu[k], sd = res0$sd[k])
             
         } else if (!is.null(p0) & is.null(p1)){
-            aux0 <- norMix(mu = res0$Mu[k,], sigma = sqrt(res0$Sigma2[k,]), w = p0[k,])
+            aux0 <- norMix(mu = res0$mu[k,], sigma = res0$sd[k,], w = p0[k,])
             
-            F1 <- pnorm(grid, mean = res1$Mu[k], sd = sqrt(res1$Sigma2[k]))
+            F1 <- pnorm(grid, mean = res1$mu[k], sd = res1$sd[k])
             F0 <- pnorMix(grid, aux0)
             
             dif <- F0 - F1
@@ -41,11 +41,11 @@ function(object, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) 
             thresholds.s <- mean(grid[which(dif == max(dif))])
             YI.s <- max(dif)
             
-            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$Mu[k], sd = sqrt(res1$Sigma2[k]))
+            TPF.s <- 1 - pnorm(thresholds.s, mean = res1$mu[k], sd = res1$sd[k])
             FPF.s <- 1 - pnorMix(thresholds.s, aux0)
         } else {
-            aux0 <- norMix(mu = res0$Mu[k,], sigma = sqrt(res0$Sigma2[k,]), w = p0[k,])
-            aux1 <- norMix(mu = res1$Mu[k,], sigma = sqrt(res1$Sigma2[k,]), w = p1[k,])
+            aux0 <- norMix(mu = res0$mu[k,], sigma = res0$sd[k,], w = p0[k,])
+            aux1 <- norMix(mu = res1$mu[k,], sigma = res1$sd[k,], w = p1[k,])
             
             F0 <- pnorMix(grid, aux0)
             F1 <- pnorMix(grid, aux1)
@@ -131,10 +131,12 @@ function(object, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) 
         stop("nsave should be larger than zero.")
     }
 
-    thresholds <- c(mean(thresholds.s), quantile(thresholds.s, c(0.025,0.975)))
-    YI <- c(mean(YI.s), quantile(YI.s, c(0.025,0.975)))
-    FPF <- c(mean(FPF.s), quantile(FPF.s, c(0.025,0.975)))
-    TPF <- c(mean(TPF.s), quantile(TPF.s, c(0.025,0.975)))
+    alpha <- (1-ci.level)/2
+
+    thresholds <- c(mean(thresholds.s), quantile(thresholds.s, c(alpha, 1-alpha)))
+    YI <- c(mean(YI.s), quantile(YI.s, c(alpha, 1-alpha)))
+    FPF <- c(mean(FPF.s), quantile(FPF.s, c(alpha, 1-alpha)))
+    TPF <- c(mean(TPF.s), quantile(TPF.s, c(alpha, 1-alpha)))
     
     names(thresholds) <- names(YI) <- names(FPF) <- names(TPF) <- c("est","ql", "qh")
     

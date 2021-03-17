@@ -1,5 +1,5 @@
 pooledROC.BB <-
-function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, ci.level = 0.95, pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     compute.ROC <- function(i, yh, yd, pauc, p = seq(0,1,l=101)) {
         n0 <- length(yh)
         n1 <- length(yd)
@@ -36,6 +36,12 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pa
     pauc <- do.call("pauccontrol", pauc)
     
     parallel <- match.arg(parallel)
+
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
     
     # Obtain the marker in healthy and diseased
     yh <- data[,marker][data[,group] == tag.h]
@@ -109,21 +115,22 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, pauc = pa
 
     poolROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
     poolROC[,1] <- apply(rocbbpool, 1, mean)
-    poolROC[,2] <- apply(rocbbpool, 1, quantile, 0.025)
-    poolROC[,3] <- apply(rocbbpool, 1, quantile, 0.975)
+    poolROC[,2] <- apply(rocbbpool, 1, quantile, alpha)
+    poolROC[,3] <- apply(rocbbpool, 1, quantile, 1-alpha)
     
     res <- list()
     res$call <- match.call()
     res$marker <- list(h = yh, d = yd)
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$p <- p
+    res$ci.level <- ci.level
     res$ROC <- poolROC
-    AUC <- c(mean(aucbbpool), quantile(aucbbpool,c(0.025,0.975)))
+    AUC <- c(mean(aucbbpool), quantile(aucbbpool,c(alpha,1-alpha)))
     names(AUC) <- c("est","ql", "qh")
     res$AUC <- AUC
     res$weights <- list(h = weights.h, d = weights.d)
     if(pauc$compute) {
-        pAUC <- c(mean(paucbbpool), quantile(paucbbpool, c(0.025,0.975)))
+        pAUC <- c(mean(paucbbpool), quantile(paucbbpool, c(alpha,1-alpha)))
         names(pAUC) <- c("est","ql", "qh")
         res$pAUC <- if(pauc$focus == "FPF") {
         	pAUC/pauc$value

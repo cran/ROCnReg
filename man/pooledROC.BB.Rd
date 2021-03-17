@@ -8,7 +8,7 @@ This function estimates the pooled ROC curve using the Bayesian bootstrap estima
 }
 \usage{
 pooledROC.BB(marker, group, tag.h, data, 
-	p = seq(0, 1, l = 101), B = 5000, pauc = pauccontrol(),
+	p = seq(0, 1, l = 101), B = 5000, ci.level = 0.95, pauc = pauccontrol(),
   	parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -19,6 +19,7 @@ pooledROC.BB(marker, group, tag.h, data,
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve.}
   \item{B}{An integer value specifying the number of Bayesian bootstrap resamples. By default 5000.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the level for the credible interval. The default is 0.95.}
   \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
   \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
@@ -51,9 +52,10 @@ As a result, the function provides a list with the following components:
 \item{marker}{A list with the diagnostic test outcomes in the healthy (h) and diseased (d) groups.}
 \item{missing.ind}{A logical value indicating whether missing values occur.}
 \item{p}{Set of false positive fractions (FPF) at which the pooled ROC curve has been estimated.}
-\item{ROC}{Estimated pooled ROC curve, and corresponding 95\% pointwise credible band.}
-\item{AUC}{Estimated pooled AUC, and corresponding 95\% credible interval.}
-\item{pAUC}{If computed, estimated partial area under the pooled ROC curve (posterior mean) and 95\% credible interval. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
+\item{ROC}{Estimated pooled ROC curve, and corresponding \code{ci.level}*100\% pointwise credible band.}
+\item{AUC}{Estimated pooled AUC, and corresponding \code{ci.level}*100\% credible interval.}
+\item{pAUC}{If computed, estimated partial area under the pooled ROC curve (posterior mean) and \code{ci.level}*100\% credible interval. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 \item{weights}{list with the Dirichlet weights (involved in the estimation) in the healthy (h) and diseased (d) groups. These are matrices of dimension n0 x B and n1 x B, where n0 is the number of healthy individuals and n1 is the number of diseased individuals. }
 }
 \references{

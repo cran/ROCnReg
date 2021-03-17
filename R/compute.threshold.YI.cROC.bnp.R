@@ -1,5 +1,5 @@
 compute.threshold.YI.cROC.bnp <-
-function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, newdata, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     
     doMCMCTH <- function(k, res0, res1, Xhp, Xdp, Lh, Ld, grid) {
         npred <- nrow(Xhp)
@@ -109,6 +109,7 @@ function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl
     if(missing(newdata)) {
         newdata <- cROCData(object$data, names.cov, object$group)
     } else {
+        newdata <- as.data.frame(newdata)
         newdata <- na.omit(newdata[,names.cov,drop=FALSE])
     }
     
@@ -179,12 +180,14 @@ function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl
         stop("nsave should be larger than zero.")
     }
 
+    alpha <- (1-ci.level)/2
+    
     res <- list()
     res$call <- match.call()
     res$newdata <- newdata
-    res$thresholds <- cbind(est = apply(thresholds.s, 1, mean), ql = apply(thresholds.s, 1, quantile, 0.025), qh = apply(thresholds.s, 1, quantile, 0.975))
-    res$YI <- cbind(est = apply(YI.s, 1, mean), ql = apply(YI.s, 1, quantile, 0.025), qh = apply(YI.s, 1, quantile, 0.975))
-    res$FPF <- cbind(est = apply(FPF.s, 1, mean), ql = apply(FPF.s, 1, quantile, 0.025), qh = apply(FPF.s, 1, quantile, 0.975))
-    res$TPF <- cbind(est = apply(TPF.s, 1, mean), ql = apply(TPF.s, 1, quantile, 0.025), qh = apply(TPF.s, 1, quantile, 0.975))
+    res$thresholds <- cbind(est = apply(thresholds.s, 1, mean), ql = apply(thresholds.s, 1, quantile, alpha), qh = apply(thresholds.s, 1, quantile, 1-alpha))
+    res$YI <- cbind(est = apply(YI.s, 1, mean), ql = apply(YI.s, 1, quantile, alpha), qh = apply(YI.s, 1, quantile, 1-alpha))
+    res$FPF <- cbind(est = apply(FPF.s, 1, mean), ql = apply(FPF.s, 1, quantile, alpha), qh = apply(FPF.s, 1, quantile, 1-alpha))
+    res$TPF <- cbind(est = apply(TPF.s, 1, mean), ql = apply(TPF.s, 1, quantile, alpha), qh = apply(TPF.s, 1, quantile, 1-alpha))
     res
 }

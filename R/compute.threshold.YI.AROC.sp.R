@@ -1,5 +1,5 @@
 compute.threshold.YI.AROC.sp <-
-function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, newdata, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
   if(class(object)[1] != "AROC.sp") {
     stop(paste0("This function can not be used for this object class: ", class(object)[1]))
   }
@@ -12,6 +12,7 @@ function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl
   if(missing(newdata)) {
     newdata <- cROCData(object$data, names.cov, object$group)
   } else {
+    newdata <- as.data.frame(newdata)
     newdata <- na.omit(newdata[,names.cov,drop = FALSE])
   }  
   p <- seq(0, 1, length = 500)

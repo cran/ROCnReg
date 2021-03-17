@@ -1,5 +1,5 @@
 cROC.sp <-
-function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal", "empirical"), pauc = pauccontrol(), p = seq(0,1,l = 101), B = 1000, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 
     doBoostROC <- function(i, formula.h, formula.d, data.h, data.d, newdata, croc, est.cdf, pauc, p) {    
         data.boot.d <- data.d
@@ -154,6 +154,12 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     names.cov.d <- get_vars_formula(formula.d) #all.vars(formula.d)[-1]
     names.cov <- c(names.cov.h, names.cov.d[is.na(match(names.cov.d, names.cov.h))])
     
+    if (inherits(data, what = 'data.frame')) {
+        data <- as.data.frame(data)
+    } else {
+        stop("The object specified in argument 'data' is not a data frame")
+    }
+
     if(!missing(newdata) && !inherits(newdata, "data.frame"))
     	stop("Newdata must be a data frame")
     if(sum(is.na(match(c(marker, names.cov, group), names(data)))))
@@ -163,6 +169,12 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     if(length(unique(data[,group])) != 2)
     	stop(paste(group," variable must have only two different values (for healthy and diseased individuals)"), sep = "")
     
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
+
     # Data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
     omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, names.cov)], 1, anyNA)
@@ -176,6 +188,7 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     if(missing(newdata)) {
         newdata <- cROCData(data.new, names.cov, group)
     } else {
+        newdata <- as.data.frame(newdata)
         newdata <- na.omit(newdata[,names.cov,drop=FALSE])
     }
     
@@ -268,25 +281,25 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     ccoeffROCres[,1] <- coeffROCp
 
     if(B > 0) {
-        cROCres$ql <- apply(crocpb, c(1,2), quantile, prob = 0.025)
-        cROCres$qh <- apply(crocpb, c(1,2), quantile, prob = 0.975)
+        cROCres$ql <- apply(crocpb, c(1,2), quantile, prob = alpha)
+        cROCres$qh <- apply(crocpb, c(1,2), quantile, prob = 1-alpha)
         
-        cAUCres[,2] <- apply(caucb, 1, quantile, prob = 0.025)
-        cAUCres[,3] <- apply(caucb, 1, quantile, prob = 0.975)
+        cAUCres[,2] <- apply(caucb, 1, quantile, prob = alpha)
+        cAUCres[,3] <- apply(caucb, 1, quantile, prob = 1-alpha)
         
         if(pauc$compute){
-            cpAUCres[,2] <- apply(cpaucb, 1, quantile, prob = 0.025)
-            cpAUCres[,3] <- apply(cpaucb, 1, quantile, prob = 0.975)
+            cpAUCres[,2] <- apply(cpaucb, 1, quantile, prob = alpha)
+            cpAUCres[,3] <- apply(cpaucb, 1, quantile, prob = 1-alpha)
         }
 
-        ccoeff0res[,2] <- apply(ccoeff0b, 1, quantile, prob = 0.025)
-        ccoeff0res[,3] <- apply(ccoeff0b, 1, quantile, prob = 0.975)
+        ccoeff0res[,2] <- apply(ccoeff0b, 1, quantile, prob = alpha)
+        ccoeff0res[,3] <- apply(ccoeff0b, 1, quantile, prob = 1-alpha)
 
-        ccoeff1res[,2] <- apply(ccoeff1b, 1, quantile, prob = 0.025)
-        ccoeff1res[,3] <- apply(ccoeff1b, 1, quantile, prob = 0.975)
+        ccoeff1res[,2] <- apply(ccoeff1b, 1, quantile, prob = alpha)
+        ccoeff1res[,3] <- apply(ccoeff1b, 1, quantile, prob = 1-alpha)
 
-        ccoeffROCres[,2] <- apply(ccoeffROCb, 1, quantile, prob = 0.025)
-        ccoeffROCres[,3] <- apply(ccoeffROCb, 1, quantile, prob = 0.975)
+        ccoeffROCres[,2] <- apply(ccoeffROCb, 1, quantile, prob = alpha)
+        ccoeffROCres[,3] <- apply(ccoeffROCb, 1, quantile, prob = 1-alpha)
     }
     colnames(cAUCres) <- col.names
     if(pauc$compute){
@@ -303,8 +316,9 @@ function(formula.h, formula.d, group, tag.h, data,  newdata, est.cdf = c("normal
     res$tag.h <- tag.h
     res$formula <- list(h = formula.h, d = formula.d)
     res$est.cdf <- est.cdf
-    res$ci.fit <- ifelse(B, TRUE, FALSE)
     res$p <- p
+    res$ci.fit <- ifelse(B, TRUE, FALSE)
+    res$ci.level <- ci.level
     res$ROC <- cROCres
     res$AUC <- cAUCres
     if(pauc$compute){

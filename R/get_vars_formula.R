@@ -35,7 +35,7 @@ get_vars_formula <- function(formula) {
     if(nt) {        
         if(nfun > 0) {
             for(i in ifun) {
-                vars.formula <- c(vars.formula, eval(parse(text = paste("AROC.", terms[i], sep="")))$term)   
+                vars.formula <- c(vars.formula, eval(parse(text = paste("AROC.", terms[i], sep="")))$vars)   
             }
 		}
 		if(nlin > 0) {
@@ -43,5 +43,6 @@ get_vars_formula <- function(formula) {
             vars.formula <- c(vars.formula, all.vars(formula(paste("~", full_term))))
         }
     }
+    vars.formula <- unique(vars.formula)
     vars.formula
 }

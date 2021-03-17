@@ -11,7 +11,7 @@ This function estimates the covariate-specific ROC curve (cROC) using the nonpar
 cROC.kernel(marker, covariate, group, tag.h, 
   bw = c("LS", "AIC"), regtype = c("LC", "LL"), 
   data, newdata, pauc = pauccontrol(),  
-  p = seq(0, 1, l = 101), B = 1000,
+  p = seq(0, 1, l = 101), B = 1000, ci.level = 0.95,
     parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -27,6 +27,7 @@ cROC.kernel(marker, covariate, group, tag.h,
    \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the covariate-adjusted ROC curve should be computed, and in case it is computed, , whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-specific ROC curve. This set is also used to compute the area under the covariate-specific ROC curve using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
   \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
   \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
@@ -59,14 +60,15 @@ As a result, the function provides a list with the following components:
 \item{newdata}{A data frame containing the values of the covariates at which the covariate-specific ROC curve (AUC and pAUC, if required) was computed.}
 \item{data}{The original supplied data argument.}
 \item{missing.ind}{A logical value indicating whether for each pair of observations (test outcomes and covariates) missing values occur.}
-\item{p}{Set of false positive fractions (FPF) at which the covariate-specific ROC curve has been estimated.}
 \item{marker}{The name of the diagnostic test variable in the dataframe.}
 \item{group}{The value of the argument \code{group} used in the call.}
 \item{tag.h}{The value of the argument \code{tag.h} used in the call.}
 \item{covariate}{The value of the argument \code{covariate} used in the call.}
-\item{ROC}{Estimated covariate-specific ROC curve (AROC), and 95\% pointwise confidence band (if computed).}
-\item{AUC}{Estimated area under the covariate-specific ROC curve, and 95\% confidence interval (if computed).}
-\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve and 95\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
+\item{p}{Set of false positive fractions (FPF) at which the covariate-specific ROC curve has been estimated.}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
+\item{ROC}{Estimated covariate-specific ROC curve (AROC), and \code{ci.level}*100\% pointwise confidence band (if computed).}
+\item{AUC}{Estimated area under the covariate-specific ROC curve, and \code{ci.level}*100\% confidence interval (if computed).}
+\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve and \code{ci.level}*100\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
 \item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component of the list contains the following information: (1) \code{bw.mean}: An object of class \code{\link[np:np.regression.bw]{npregbw}} with the selected bandwidth for the nonparametric regression function. For further details, see \code{R}-package \code{\link[np:np-package]{np}}. (2) \code{bw.var}: An object of class \code{\link[np:np.regression.bw]{npregbw}} with the selected bandwidth for the nonparametric variance function. For further details, see  \code{R}-package \code{\link[np:np-package]{np}}. (3) \code{fit.mean}: An object of class \code{\link[np:np.regression]{npreg}} with the nonparametric regression function estimate. For further details, see \code{R}-package \code{\link[np:np-package]{np}}. (4) \code{fit.var}: An object of class \code{\link[np:np.regression]{npreg}} with the nonparametric variance function estimate. For further details, see \code{R}-package \code{\link[np:np-package]{np}}.}
 }
 \references{

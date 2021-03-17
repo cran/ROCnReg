@@ -7,7 +7,7 @@ function(x, ...) {
 	# AUC and pAUC
 	auc_aauc <- "Area under the pooled ROC curve"
 	if(length(x$AUC) == 3) {
-		legend.text <- paste0(auc_aauc, ": ", paste(round(x$AUC[1], 3), " (", round(x$AUC[2], 3),"",", ", round(x$AUC[3], 3),")", sep = ""))
+		legend.text <- paste0(auc_aauc, ": ", paste(round(x$AUC[1], 3), " (", round(x$AUC[2], 3),"",", ", round(x$AUC[3], 3),")*", sep = ""))
 	} else {
 		legend.text <- paste0(auc_aauc, ": ", round(x$AUC[1], 3))
 	}
@@ -18,11 +18,18 @@ function(x, ...) {
 		p_auc_aauc <- paste0(p_auc_aauc, ifelse(attr(x$pAUC, "focus") == "FPF", " (FPF = ", " (Se = "), attr(x$pAUC, "value"), ")")
 
 		if(length(x$pAUC) == 3) {
-			legend.text <- paste0(p_auc_aauc, ": ", paste(round(x$pAUC[1], 3), " (", round(x$pAUC[2], 3),"",", ", round(x$pAUC[3], 3),")", sep = ""))
+			legend.text <- paste0(p_auc_aauc, ": ", paste(round(x$pAUC[1], 3), " (", round(x$pAUC[2], 3),"",", ", round(x$pAUC[3], 3),")*", sep = ""))
 		} else {
 			legend.text <- paste0(p_auc_aauc, ": ", round(x$pAUC[1], 3))
 		}
 		cat(paste0(legend.text, "\n"))
+	}
+	if(class(x)[1] %in% c("pooledROC.BB", "pooledROC.dpm")) {
+		cat("\n * Credible level: ", x$ci.level, "\n")
+	} else {
+		if(length(x$AUC) == 3) {
+			cat("\n * Confidence level: ", x$ci.level, "\n")
+		}
 	}
 	invisible(x)
 }

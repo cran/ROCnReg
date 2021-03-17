@@ -1,5 +1,5 @@
 compute.threshold.FPF.cROC.bnp <-
-function(object, newdata, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, newdata, FPF = 0.5, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     if(class(object)[1] != "cROC.bnp") {
         stop(paste0("This function cannot be used for this object class: ", class(object)[1]))
     }
@@ -20,10 +20,11 @@ function(object, newdata, FPF = 0.5, parallel = c("no", "multicore", "snow"), nc
     if(missing(newdata)) {
         newdata <- cROCData(object$data, names.cov, object$group)
     } else {
+        newdata <- as.data.frame(newdata)
         newdata <- na.omit(newdata[,names.cov,drop = FALSE])
     }
     
-    thresholds <- compute.threshold.FPF.bnp(object_h = object$fit$h, object_d = object$fit$d, newdata = newdata, FPF = FPF, parallel = parallel, ncpus = ncpus, cl = cl)
+    thresholds <- compute.threshold.FPF.bnp(object_h = object$fit$h, object_d = object$fit$d, newdata = newdata, FPF = FPF, ci.level = ci.level, parallel = parallel, ncpus = ncpus, cl = cl)
         
     res <- list()
     res$newdata <- newdata

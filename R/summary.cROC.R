@@ -7,6 +7,7 @@ function(object, ...) {
 								   	   "cROC.sp" = "Conditional ROC curve - semiparametric")
 
 	res$method <- method
+	alpha <- (1-object$ci.level)/2
 
 	if(class(object)[1] == "cROC.kernel") {
 		m <- matrix(ncol = 2, nrow = 1, dimnames = list(c("Bandwidth:"), c("Group H", "Group D")))
@@ -27,20 +28,20 @@ function(object, ...) {
 
 	if(class(object)[1] == "cROC.sp") {
 		if(ncol(object$coeff$h) == 3) {
-			colnames(object$coeff$h) <- c("Estimate", "Quantile 2.5%", "Quantile 97.5%")
+			colnames(object$coeff$h) <- c("Estimate", paste0("Quantile ", alpha*100, "%"), paste0("Quantile ", (1-alpha)*100, "%"))
 		} else {
 			colnames(object$coeff$h) <- c("Estimate")
 		}
 		res$sp.coeff$h <- object$coeff$h
 		if(ncol(object$coeff$d) == 3) {
-			colnames(object$coeff$d) <- c("Estimate", "Quantile 2.5%", "Quantile 97.5%")
+			colnames(object$coeff$d) <- c("Estimate", paste0("Quantile ", alpha*100, "%"), paste0("Quantile ", (1-alpha)*100, "%"))
 		} else {
 			colnames(object$coeff$d) <- c("Estimate")
 		}
 		res$sp.coeff$d <- object$coeff$d
 
 		if(ncol(object$coeff$ROC) == 3) {
-			colnames(object$coeff$ROC) <- c("Estimate", "Quantile 2.5%", "Quantile 97.5%")
+			colnames(object$coeff$ROC) <- c("Estimate", paste0("Quantile ", alpha*100, "%"), paste0("Quantile ", (1-alpha)*100, "%"))
 		} else {
 			colnames(object$coeff$ROC) <- c("Estimate")
 		}

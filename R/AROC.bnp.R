@@ -5,6 +5,7 @@ tag.h,
 data,
 standardise = TRUE,
 p = seq(0,1,l = 101),
+ci.level = 0.95,
 compute.lpml = FALSE,
 compute.WAIC = FALSE,
 compute.DIC = FALSE,
@@ -105,10 +106,22 @@ cl = NULL) {
     # Variables in the model
     names.cov <- get_vars_formula(formula.h) #all.vars(formula.h)[-1]
     
+    if (inherits(data, what = 'data.frame')) {
+        data <- as.data.frame(data)
+    } else {
+        stop("The object specified in argument 'data' is not a data frame")
+    }
+
     if(sum(is.na(match(c(marker, names.cov, group), names(data)))))
         stop("Not all needed variables are supplied in data")
     if(length(unique(data[,group])) != 2)
         stop(paste(group," variable must have only two different values (for healthy and diseased individuals)"), sep = "")
+    
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alphaci <- (1-ci.level)/2
     
     # New data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
@@ -136,10 +149,12 @@ cl = NULL) {
     data.d.marker <- data.d[,marker]
 
     # Getting OLS estimates
-    res <- ols.function(X0, data.h.marker, vcov = TRUE)
-    coefs.h <- res$coeff
-    var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
-    cov.h <- res$vcov*var.h
+    if(!standardise & (anyNA(prior.h$m0) | anyNA(prior.h$S0) | anyNA(prior.h$Psi))) {
+        res <- ols.function(X0, data.h.marker, vcov = TRUE)
+        coefs.h <- res$coeff
+        var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
+        cov.h <- res$vcov*var.h
+    }
     
     # Hyperparameters
     L <- prior.h$L
@@ -149,8 +164,7 @@ cl = NULL) {
     Psi <- prior.h$Psi
     a <- prior.h$a
     b <- prior.h$b
-    aalpha <- prior.h$aalpha
-    balpha <- prior.h$balpha
+    alpha <- prior.h$alpha
 
     if(is.na(L)) {
         L <- 10 
@@ -159,7 +173,7 @@ cl = NULL) {
             stop(paste0("L must be a constant"))
         }
     }
-    if(all(is.na(m0))) {
+    if(anyNA(m0)) {
         if(standardise) m0 <- rep(0, k)
         else m0 <- coefs.h
     } else { 
@@ -168,7 +182,7 @@ cl = NULL) {
         }
     }
     
-    if(all(is.na(S0))){
+    if(anyNA(S0)) {
         if(standardise) S0 <- 10*diag(k)
         else S0 <- cov.h
     } else { 
@@ -177,7 +191,7 @@ cl = NULL) {
         }
     }
     
-    if(all(is.na(Psi))){
+    if(anyNA(Psi)) {
         if(standardise) Psi <- diag(k)
         else Psi <- 30*cov.h
     } else { 
@@ -203,8 +217,10 @@ cl = NULL) {
     }
     
     if(is.na(b)){
-        if(standardise) b <- 2
-        else b <- var.h
+        if(standardise) {
+            b <- 0.5
+        }
+        else b <- var.h/2
     } else { 
         if(length(b) != 1) {
             stop(paste0("'b' must be a constant"))
@@ -212,19 +228,11 @@ cl = NULL) {
     }
     
     if(L > 1) {
-        if(is.na(aalpha)) {
-            aalpha <- 2 
+        if(is.na(alpha)) {
+            alpha <- 1
         } else { 
-            if(length(aalpha) != 1) {
-                stop(paste0("aalpha must be a constant"))
-            }
-        }
-        
-        if(is.na(balpha)) {
-            balpha <- 2 
-        } else {
-            if(length(balpha) != 1) {
-                stop(paste0("balpha must be a constant"))
+            if(length(alpha) != 1) {
+                stop(paste0("alpha must be a constant"))
             }
         }
     }
@@ -238,8 +246,7 @@ cl = NULL) {
         Psi = Psi,
         a = a,
         b = b,
-        aalpha = aalpha,
-        balpha = balpha,
+        alpha = alpha,
         L = L),
         mcmc = mcmc,
         standardise = standardise)
@@ -265,6 +272,7 @@ cl = NULL) {
         if(all(is.na(density$newdata))) {
             newdata <- cROCData(data.new, names.cov, group)
         } else {
+            density$newdata <- as.data.frame(density$newdata)
             newdata <- na.omit(density$newdata[,names.cov,drop=FALSE])
         }
         density$Xhp <- predict(MM0, newdata = newdata)$X
@@ -328,8 +336,8 @@ cl = NULL) {
             meanfun.h <- simplify2array(resBoot["meanfun.h",])
 
             meanfun.h.m <- apply(meanfun.h, 1, mean)
-            meanfun.h.l <- apply(meanfun.h, 1, quantile, prob = 0.025)
-            meanfun.h.h <- apply(meanfun.h, 1, quantile, prob = 0.975)
+            meanfun.h.l <- apply(meanfun.h, 1, quantile, prob = alphaci)
+            meanfun.h.h <- apply(meanfun.h, 1, quantile, prob = 1-alphaci)
         }
 
     } else {
@@ -338,9 +346,9 @@ cl = NULL) {
 
     AROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
     AROC[,1] <- apply(arocbbddp, 1,mean)
-    AROC[,2] <- apply(arocbbddp, 1, quantile, prob = 0.025)
-    AROC[,3] <- apply(arocbbddp, 1, quantile, prob = 0.975)
-    AUC <- c(mean(aucddp), quantile(aucddp,c(0.025,0.975)))
+    AROC[,2] <- apply(arocbbddp, 1, quantile, prob = alphaci)
+    AROC[,3] <- apply(arocbbddp, 1, quantile, prob = 1-alphaci)
+    AUC <- c(mean(aucddp), quantile(aucddp,c(alphaci,1-alphaci)))
     names(AUC) <- c("est","ql", "qh")
 
     res <- list()
@@ -351,6 +359,7 @@ cl = NULL) {
     res$group <- group
     res$tag.h <- tag.h
     res$p <- p
+    res$ci.level <- ci.level
     res$mcmc <- mcmc
     if(L > 1){
         res$prior <- list(m0 = m0,
@@ -359,8 +368,7 @@ cl = NULL) {
         Psi = Psi,
         a = a,
         b = b,
-        aalpha = aalpha,
-        balpha = balpha,
+        alpha = alpha,
         L = L)
     }
     if(L == 1){
@@ -375,7 +383,7 @@ cl = NULL) {
     res$ROC <- AROC
     res$AUC <- AUC
     if(pauc$compute) {
-        aux <- c(mean(paucddp), quantile(paucddp, c(0.025, 0.975)))
+        aux <- c(mean(paucddp), quantile(paucddp, c(alphaci, 1-alphaci)))
         if(pauc$focus == "FPF"){
             res$pAUC <- aux/pauc$value
         } else{

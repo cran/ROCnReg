@@ -19,8 +19,7 @@ function(y, X, prior, mcmc, standardise = TRUE) {
     psi <- prior$Psi
     a <- prior$a
     b <- prior$b
-    aalpha <- prior$aalpha
-    balpha <- prior$balpha
+    alpha <- prior$alpha
     L <- prior$L
     
     nburn <- mcmc$nburn
@@ -37,7 +36,7 @@ function(y, X, prior, mcmc, standardise = TRUE) {
 
     z[1,] <- rep(1,n)
     
-    beta <- matrix(NA_real_, nrow = L, ncol = k)
+    beta <- matrix(0, nrow = L, ncol = k)
     aux <- ols.function(X, yt)$coeff
     if(!inherits(aux, "try-error")) {
         for(l in 1:L) {
@@ -63,17 +62,12 @@ function(y, X, prior, mcmc, standardise = TRUE) {
     mu <- mvrnorm(1, mu = m, Sigma = S)
     Sigmainv <- rWishart(1, df = nu, solve(nu*psi))[,,1] 
 
-    alpha <- numeric(nsim)
-    alpha[1] <- 1
-    
-    for(i in 2:nsim) {
+for(i in 2:nsim) {
         cumv <- cumprod(1-v)
         p[1] <- v[1]
         #for(l in 2:L) {
         #    p[l] <- v[l]*cumv[l-1]
         #}
-        cumv <- cumprod(1-v)
-        p[1] <- v[1]
         p[2:L] <- v[2:L]*cumv[1:(L-1)]
 
         for(l in 1:L) {
@@ -98,9 +92,8 @@ function(y, X, prior, mcmc, standardise = TRUE) {
         #for(l in 1:(L-1)) {
         #    v[l] <- rbeta(1, 1 + ns[l], alpha[i-1] + sum(ns[(l+1):L]))
         #}
-        v[1:(L-1)] <- rbeta(L-1, 1 + ns[1:(L-1)], alpha[i-1] + rev(cumsum(rev(ns[-1]))))
+        v[1:(L-1)] <- rbeta(L-1, 1 + ns[1:(L-1)], alpha + rev(cumsum(rev(ns[-1]))))
         
-        alpha[i] <- rgamma(1, shape = aalpha + L, balpha - sum(log(v[1:(L-1)])))
         #Sigmainv_mu <- Sigmainv[i-1,,]%*%mu[i-1,]
         Sigmainv_mu <- Sigmainv%*%mu
         

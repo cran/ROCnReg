@@ -7,8 +7,10 @@ function(object, ...) {
 	# AUC and pAUC
 	auc_aauc <- "Area under the pooled ROC curve"
 	if(length(object$AUC) == 3) {
-		legend.text <- paste0(auc_aauc, ": ", paste(round(object$AUC[1], 3), " (", round(object$AUC[2], 3),"",", ", round(object$AUC[3], 3),")", sep = ""))
+		ci.fit = TRUE
+		legend.text <- paste0(auc_aauc, ": ", paste(round(object$AUC[1], 3), " (", round(object$AUC[2], 3),"",", ", round(object$AUC[3], 3),")*", sep = ""))
 	} else {
+		ci.fit = FALSE
 		legend.text <- paste0(auc_aauc, ": ", round(object$AUC[1], 3))
 	}
 	res$AUC <- legend.text
@@ -17,7 +19,7 @@ function(object, ...) {
 		p_auc_aauc <- paste0(p_auc_aauc, ifelse(attr(object$pAUC, "focus") == "FPF", " (FPF = ", " (Se = "), attr(object$pAUC, "value"), ")")
 
 		if(length(object$pAUC) == 3) {
-			legend.text <- paste0(p_auc_aauc, ": ", paste(round(object$pAUC[1], 3), " (", round(object$pAUC[2], 3),"",", ", round(object$pAUC[3], 3),")", sep = ""))
+			legend.text <- paste0(p_auc_aauc, ": ", paste(round(object$pAUC[1], 3), " (", round(object$pAUC[2], 3),"",", ", round(object$pAUC[3], 3),")*", sep = ""))
 		} else {
 			legend.text <- paste0(p_auc_aauc, ": ", round(object$pAUC[1], 3))
 		}
@@ -64,6 +66,13 @@ function(object, ...) {
 	m[1,] <- c(sprintf("%.0f", length(object$marker$h)), sprintf("%.0f", length(object$marker$d)))
 	m[2,] <- c(sprintf("%.0f", sum(object$missing.ind$h)), sprintf("%.0f", sum(object$missing.ind$d)))
 	res$sz <- m
+	res$ci.fit <- ci.fit
+	res$ci.level <- object$ci.level
+	if(class(object)[1] %in% c("pooledROC.BB", "pooledROC.dpm")) {
+		res$bayesian = TRUE
+	} else {
+		res$bayesian = FALSE
+	}
 	print.summary.pooledROC(res)
 	invisible(res)	   	
 }

@@ -1,5 +1,5 @@
 compute.threshold.FPF.pooledROC.emp <-
-function(object, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, FPF = 0.5, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	if(class(object)[1] != "pooledROC.emp") {
 		stop(paste0("This function can not be used for this object class: ", class(object)[1]))
 	}

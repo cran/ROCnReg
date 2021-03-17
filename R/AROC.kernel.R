@@ -1,5 +1,5 @@
 AROC.kernel <-
-function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), pauc = pauccontrol(), data, p = seq(0,1,l = 101), B = 1000, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","LL"), pauc = pauccontrol(), data, p = seq(0,1,l = 101), B = 1000, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     doBoostROC <- function(i, marker, covariate, group, tag.h, bw, regtype, pauc, croc, p) {
         
         data.boot.d <- croc$data.d[sample(nrow(croc$data.d), replace=TRUE),]
@@ -97,6 +97,19 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
     bw.aux <- switch(bw, "LS" = "cv.ls", "AIC" = "cv.aic")
     regtype.aux <- switch(regtype, "LC" = "lc", "LL" = "ll")
     
+    if (inherits(data, what = 'data.frame')) {
+        data <- as.data.frame(data)
+    } else {
+        stop("The object specified in argument 'data' is not a data frame")
+    }
+    
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
+    
+    
     # New data, removing missing values
     data.new <- data[,c(marker,group,covariate)]
     omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, covariate)], 1, anyNA)
@@ -169,11 +182,11 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
         pAUC <- paarocp
     }
     if(B > 0) {
-        poolROC[,2] <- apply(arocpb, 1, quantile, prob = 0.025)
-        poolROC[,3] <- apply(arocpb, 1, quantile, prob = 0.975)
-        AUC <- c(AUC, quantile(aarocpb, c(0.025, 0.975)))
+        poolROC[,2] <- apply(arocpb, 1, quantile, prob = alpha)
+        poolROC[,3] <- apply(arocpb, 1, quantile, prob = 1-alpha)
+        AUC <- c(AUC, quantile(aarocpb, c(alpha, 1-alpha)))
         if(pauc$compute){
-            pAUC <- c(pAUC, quantile(paarocpb, c(0.025, 0.975)))
+            pAUC <- c(pAUC, quantile(paarocpb, c(alpha, 1-alpha)))
         }
     }
     names(AUC) <- col.names
@@ -189,6 +202,7 @@ function(marker, covariate, group, tag.h, bw = c("LS","AIC"), regtype = c("LC","
     res$group <- group
     res$tag.h <- tag.h
     res$p <- p
+    res$ci.level <- ci.level
     res$ROC <- poolROC
     res$AUC <- AUC
     if(pauc$compute){

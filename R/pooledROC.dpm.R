@@ -2,6 +2,7 @@ pooledROC.dpm <-
 function(marker, group, tag.h, data,
 standardise = TRUE,
 p = seq(0,1,l = 101),
+ci.level = 0.95,
 compute.lpml = FALSE,
 compute.WAIC = FALSE,
 compute.DIC = FALSE,
@@ -169,22 +170,27 @@ cl = NULL) {
     yh.wom <- yh[!omit.h]
     yd.wom <- yd[!omit.d]
     
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
+
     # Priors
     L.d <- prior.d$L
     m0.d <- prior.d$m0
     S0.d <- prior.d$S0
     a.d <- prior.d$a
     b.d <- prior.d$b
-    aalpha.d <- prior.d$aalpha
-    balpha.d <- prior.d$balpha
+    alpha.d <- prior.d$alpha
     
     L.h <- prior.h$L
     m0.h <- prior.h$m0
     S0.h <- prior.h$S0
     a.h <- prior.h$a
     b.h <- prior.h$b
-    aalpha.h <- prior.h$aalpha
-    balpha.h <- prior.h$balpha
+    alpha.h <- prior.h$alpha
+   
     
     if(is.na(L.d)) {
         L.d <- 10 
@@ -222,7 +228,7 @@ cl = NULL) {
     
     if(is.na(S0.h)) {
         if(standardise == TRUE) S0.h <- 10
-        else S0.h <- 100
+        else S0.h <- 100*var(yh.wom)/length(yh.wom)
     } else { 
         if(length(S0.h) != 1) {
             stop(paste0("S0 must be a constant"))
@@ -231,7 +237,7 @@ cl = NULL) {
     
     if(is.na(S0.d)) {
         if(standardise == TRUE) S0.d <- 10
-        else S0.d <- 100
+        else S0.d <- 100*var(yd.wom)/length(yd.wom)
     } else { 
         if(length(S0.d) != 1) {
             stop(paste0("S0 must be a constant"))
@@ -248,8 +254,8 @@ cl = NULL) {
     }
     
     if(is.na(b.h)) {
-        if(standardise == TRUE) b.h <- 2
-        else b.h <- var(yh.wom)
+        if(standardise == TRUE) b.h <- 0.5
+        else b.h <- var(yh.wom)/2
     } else { 
         if(length(b.h) != 1) {
             stop(paste0("b must be a constant"))
@@ -266,8 +272,8 @@ cl = NULL) {
     }
     
     if(is.na(b.d)) {
-        if(standardise == TRUE) b.d <- 2
-        else b.d <- var(yd.wom)
+        if(standardise == TRUE) b.d <- 0.5
+        else b.d <- var(yd.wom)/2
     } else { 
         if(length(b.d) != 1) {
             stop(paste0("b must be a constant"))
@@ -275,39 +281,27 @@ cl = NULL) {
     }
     
     if(L.h > 1) {
-        if(is.na(aalpha.h)) {
-            aalpha.h <- 2 
-        } else { 
-            if(length(aalpha.h) != 1) {
-                stop(paste0("aalpha must be a constant"))
-            }
+        if(is.na(alpha.h)) {
+            alpha.h <- 1
         }
-        if(is.na(balpha.h)) {
-            balpha.h <- 2 
-        } else{ 
-            if(length(balpha.h) != 1) {
-                stop(paste0("balpha must be a constant"))
+       else{
+            if(length(alpha.h) != 1) {
+                stop(paste0("alpha must be a constant"))
             }
         }
     }
     
-    if(L.d > 1){
-        if(is.na(aalpha.d)) {
-            aalpha.d <- 2 
-        } else { 
-            if(length(aalpha.d) != 1) {
-                stop(paste0("aalpha must be a constant"))
-            }
+    if(L.d > 1) {
+        if(is.na(alpha.d)) {
+            alpha.d <- 1
         }
-        
-        if(is.na(balpha.d)) {
-            balpha.d <- 2 
-        } else { 
-            if(length(balpha.d) != 1) {
-                stop(paste0("balpha must be a constant"))
+        else{
+            if(length(alpha.d) != 1) {
+                stop(paste0("alpha must be a constant"))
             }
         }
     }
+    
     np <- length(p)
     
     # Check if the seq of FPF is correct
@@ -323,8 +317,7 @@ cl = NULL) {
         S0 = S0.h,
         a = a.h,
         b = b.h,
-        aalpha = aalpha.h,
-        balpha = balpha.h,
+        alpha = alpha.h,
         L = L.h),
         mcmc = mcmc,
         standardise = standardise)
@@ -345,8 +338,7 @@ cl = NULL) {
         S0 = S0.d,
         a = a.d,
         b = b.d,
-        aalpha = aalpha.d,
-        balpha = balpha.d,
+        alpha = alpha.d,
         L = L.d),
         mcmc = mcmc,
         standardise = standardise)
@@ -435,14 +427,15 @@ cl = NULL) {
     
     poolROC <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
     poolROC[,1] <- apply(rocdpm, 1, mean)
-    poolROC[,2] <- apply(rocdpm, 1, quantile, prob = 0.025)
-    poolROC[,3] <- apply(rocdpm, 1, quantile, prob = 0.975)
+    poolROC[,2] <- apply(rocdpm, 1, quantile, prob = alpha)
+    poolROC[,3] <- apply(rocdpm, 1, quantile, prob = 1-alpha)
     
     res <- list()
     res$call <- match.call()
     res$marker <- list(h = yh, d = yd)
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$p <- p
+    res$ci.level <- ci.level
     res$mcmc <- mcmc
     res$prior <- list()
     if(L.d == 1){
@@ -457,8 +450,7 @@ cl = NULL) {
         S0 = S0.d,
         a = a.d,
         b = b.d,
-        aalpha = aalpha.d,
-        balpha = balpha.d,
+        alpha = alpha.d,
         L = L.d)
     }
     if(L.h == 1){
@@ -473,17 +465,16 @@ cl = NULL) {
         S0 = S0.h,
         a = a.h,
         b = b.h,
-        aalpha = aalpha.h,
-        balpha = balpha.h,
+        alpha = alpha.h,
         L = L.h)
     }
     res$ROC <- poolROC
-    AUC <- c(mean(aucdpm), quantile(aucdpm, c(0.025,0.975)))
+    AUC <- c(mean(aucdpm), quantile(aucdpm, c(alpha,1-alpha)))
     names(AUC) <- c("est","ql", "qh")
     res$AUC <- AUC
     
     if(pauc$compute) {
-        pAUC <- c(mean(paucdpm), quantile(paucdpm, c(0.025,0.975)))
+        pAUC <- c(mean(paucdpm), quantile(paucdpm, c(alpha,1-alpha)))
         names(pAUC) <- c("est","ql", "qh")
         res$pAUC <- if(pauc$focus == "FPF") {
             pAUC/pauc$value
@@ -519,7 +510,16 @@ cl = NULL) {
     }
     
     #res$fit <- list(h = list(P = p0, Mu = mu0, Sigma2 = sigma02), d = list(P = p1, Mu = mu1, Sigma2 = sigma12))
-    res$fit <- list(h = res0, d = res1)
+    #res$fit <- list(h = res0, d = res1)
+    res$fit <- list(h = list(mu = res0$Mu, sd = sqrt(res0$Sigma2)), d = list(mu = res1$Mu, sd = sqrt(res1$Sigma2)))
+    if(L.h > 1) {
+        res$fit$h$probs <- res0$P
+    }
+
+    if(L.d > 1) {
+        res$fit$d$probs <- res1$P
+    }
+
     class(res) <- c("pooledROC.dpm", "pooledROC")
     res
 }

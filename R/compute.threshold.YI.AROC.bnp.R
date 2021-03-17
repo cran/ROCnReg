@@ -1,5 +1,5 @@
 compute.threshold.YI.AROC.bnp <-
-function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, newdata, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     doMCMCTH <- function(k, res0, L, yd, Xd, Xhp, p) {
         nd <- length(yd)
         np <- length(p)
@@ -61,6 +61,7 @@ function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl
     if(missing(newdata)) {
         newdata <- cROCData(object$data, names.cov, object$group)
     } else {
+        newdata <- as.data.frame(newdata)
         newdata <- na.omit(newdata[,names.cov,drop = FALSE])
     }
 
@@ -119,14 +120,16 @@ function(object, newdata, parallel = c("no", "multicore", "snow"), ncpus = 1, cl
         stop("nsave should be larger than zero.")
     }
     
-    YI <- c(mean(YI.s), quantile(YI.s, c(0.025,0.975)))
-    FPF <- c(mean(FPF.s), quantile(FPF.s, c(0.025,0.975)))
+    alpha <- (1-ci.level)/2
+
+    YI <- c(mean(YI.s), quantile(YI.s, c(alpha, 1-alpha)))
+    FPF <- c(mean(FPF.s), quantile(FPF.s, c(alpha, 1-alpha)))
     names(YI) <- names(FPF) <- c("est","ql", "qh")
     
     res <- list()
     res$call <- match.call()
     res$newdata <- newdata
-    res$thresholds <- cbind(est = apply(thresholds, 1, mean), ql = apply(thresholds, 1, quantile, 0.025), qh = apply(thresholds, 1, quantile, 0.975))
+    res$thresholds <- cbind(est = apply(thresholds, 1, mean), ql = apply(thresholds, 1, quantile, alpha), qh = apply(thresholds, 1, quantile, 1-alpha))
     res$YI <- YI
     res$FPF <- FPF
     res

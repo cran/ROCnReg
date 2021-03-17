@@ -1,5 +1,5 @@
 compute.threshold.FPF.bnp <-
-function(object_h, object_d = NULL, newdata, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object_h, object_d = NULL, newdata, FPF = 0.5, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     
     doMCMCTH <- function(k, object_h, object_d = NULL, Xhp, Xdp = NULL, FPF) {
         ncov <- nrow(Xhp)
@@ -108,7 +108,7 @@ function(object_h, object_d = NULL, newdata, FPF = 0.5, parallel = c("no", "mult
     } else {
         stop("nsave should be larger than zero.")
     }
-
+    alpha <- (1-ci.level)/2
     np <- dim(thresholds)[1]
     ncov <- dim(thresholds)[2]
     
@@ -116,8 +116,8 @@ function(object_h, object_d = NULL, newdata, FPF = 0.5, parallel = c("no", "mult
     rownames(thresholdsm) <- rownames(thresholdsl) <- rownames(thresholdsh) <- FPF
     
     thresholdsm <- apply(thresholds, c(1,2), mean)
-    thresholdsl <- apply(thresholds, c(1,2), quantile, 0.025)
-    thresholdsh <- apply(thresholds, c(1,2), quantile, 0.975)
+    thresholdsl <- apply(thresholds, c(1,2), quantile, alpha)
+    thresholdsh <- apply(thresholds, c(1,2), quantile, 1-alpha)
     
     # Organise results as desired
     thresholds.ret <- vector("list", length(FPF))
@@ -135,8 +135,8 @@ function(object_h, object_d = NULL, newdata, FPF = 0.5, parallel = c("no", "mult
     if(!is.null(object_d)) {
         # Organise results as desired
         TPFm <- apply(TPF, c(1,2), mean)
-        TPFl <- apply(TPF, c(1,2), quantile, 0.025)
-        TPFh <- apply(TPF, c(1,2), quantile, 0.975)
+        TPFl <- apply(TPF, c(1,2), quantile, alpha)
+        TPFh <- apply(TPF, c(1,2), quantile, 1-alpha)
 
         # Organised results as desired
         TPF.ret <- vector("list", length(FPF))

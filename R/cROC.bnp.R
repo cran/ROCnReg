@@ -7,6 +7,7 @@ data,
 newdata,
 standardise = TRUE,
 p = seq(0, 1, l = 101),
+ci.level = 0.95,
 compute.lpml = FALSE,
 compute.WAIC = FALSE,
 compute.DIC = FALSE,
@@ -226,6 +227,12 @@ cl = NULL) {
     names.cov.d <- get_vars_formula(formula.d) #all.vars(formula.d)[-1]
     names.cov <- c(names.cov.h, names.cov.d[is.na(match(names.cov.d, names.cov.h))])
     
+    if (inherits(data, what = 'data.frame')) {
+        data <- as.data.frame(data)
+    } else {
+        stop("The object specified in argument 'data' is not a data frame")
+    }
+
     if(!missing(newdata) && !inherits(newdata, "data.frame"))
         stop("Newdata must be a data frame")
     if(sum(is.na(match(c(marker,names.cov,group), names(data)))))
@@ -234,7 +241,13 @@ cl = NULL) {
         stop("Not all needed variables are supplied in newdata")
     if(length(unique(data[,group]))!= 2)
         stop(paste(group," variable must have only two different values (for healthy and diseased individuals)"), sep="")
-     
+    
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
+
     # New data, removing missing values
     data.new <- data[,c(marker,group,names.cov)]
     omit.h <- apply(data.new[data.new[,group] == tag.h, c(marker, group, names.cov.h)], 1, anyNA)
@@ -263,28 +276,32 @@ cl = NULL) {
     if(missing(newdata)) {
         newdata <- cROCData(data.new, names.cov, group)
     } else {
+        newdata <- as.data.frame(newdata)
         newdata <- na.omit(newdata[,names.cov,drop=FALSE])
     }
     
     data.h.marker <- data.h[,marker]
     data.d.marker <- data.d[,marker]
 
-    # Getting OLS estimates
-    #coefs.h <- solve(t(X0) %*% X0) %*% t(X0) %*% data.h.marker
-    #var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
-    #cov.h <- solve(t(X0) %*% X0)*var.h
-    res <- ols.function(X0, data.h.marker, vcov = TRUE)
-    coefs.h <- res$coeff
-    var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
-    cov.h <- res$vcov*var.h
-    
-    #coefs.d <- solve(t(X1) %*% X1) %*% t(X1) %*% data.d.marker
-    #var.d <- sum((data.d.marker - X1 %*% coefs.d)^2)/(n1 - ncol(X1))
-    #cov.d <- solve(t(X1) %*% X1)*var.d
-    res <- ols.function(X1, data.d.marker, vcov = TRUE)
-    coefs.d <- res$coeff
-    var.d <- sum((data.d.marker - X1 %*% coefs.d)^2)/(n1 - ncol(X1))
-    cov.d <- res$vcov*var.d
+    if(!standardise & (anyNA(prior.h$m0) | anyNA(prior.h$S0) | anyNA(prior.h$Psi))) {
+        # Getting OLS estimates
+        #coefs.h <- solve(t(X0) %*% X0) %*% t(X0) %*% data.h.marker
+        #var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
+        #cov.h <- solve(t(X0) %*% X0)*var.h
+        res <- ols.function(X0, data.h.marker, vcov = TRUE)
+        coefs.h <- res$coeff
+        var.h <- sum((data.h.marker - X0 %*% coefs.h)^2)/(n0 - ncol(X0))
+        cov.h <- res$vcov*var.h
+    }
+    if(!standardise & (anyNA(prior.d$m0) | anyNA(prior.d$S0) | anyNA(prior.d$Psi))) {    
+        #coefs.d <- solve(t(X1) %*% X1) %*% t(X1) %*% data.d.marker
+        #var.d <- sum((data.d.marker - X1 %*% coefs.d)^2)/(n1 - ncol(X1))
+        #cov.d <- solve(t(X1) %*% X1)*var.d
+        res <- ols.function(X1, data.d.marker, vcov = TRUE)
+        coefs.d <- res$coeff
+        var.d <- sum((data.d.marker - X1 %*% coefs.d)^2)/(n1 - ncol(X1))
+        cov.d <- res$vcov*var.d
+    }
     
     # Hyperparameters
     L.d <- prior.d$L
@@ -294,8 +311,7 @@ cl = NULL) {
     Psi.d <- prior.d$Psi
     a.d <- prior.d$a
     b.d <- prior.d$b
-    aalpha.d <- prior.d$aalpha
-    balpha.d <- prior.d$balpha
+    alpha.d <- prior.d$alpha
     
     L.h <- prior.h$L
     m0.h <- prior.h$m0
@@ -304,8 +320,7 @@ cl = NULL) {
     Psi.h <- prior.h$Psi
     a.h <- prior.h$a
     b.h <- prior.h$b
-    aalpha.h <- prior.h$aalpha
-    balpha.h <- prior.h$balpha
+    alpha.h <- prior.h$alpha
     
     if(is.na(L.h)) {
         L.h <- 10 
@@ -323,7 +338,7 @@ cl = NULL) {
         }
     }
         
-    if(is.na(m0.h)) {
+    if(anyNA(m0.h)) {
         if(standardise) m0.h <- rep(0, k0)
         else m0.h <- coefs.h
     } else { 
@@ -332,7 +347,7 @@ cl = NULL) {
         }
     }
     
-    if(is.na(m0.d)) {
+    if(anyNA(m0.d)) {
         if(standardise) m0.d <- rep(0, k1)
         else m0.d <- coefs.d
     } else { 
@@ -341,7 +356,7 @@ cl = NULL) {
         }
     }
     
-    if(is.na(S0.h)) {
+    if(anyNA(S0.h)) {
         if(standardise) S0.h <- 10*diag(k0)
         else S0.h <- cov.h
     } else { 
@@ -350,7 +365,7 @@ cl = NULL) {
         }
     }
     
-    if(is.na(S0.d)) {
+    if(anyNA(S0.d)) {
         if(standardise) S0.d <- 10*diag(k1)
         else S0.d <- cov.d
     } else { 
@@ -359,7 +374,7 @@ cl = NULL) {
         }
     }
     
-    if(is.na(Psi.h)) {
+    if(anyNA(Psi.h)) {
         if(standardise) Psi.h <- diag(k0)
         else Psi.h <- 30*cov.h
     } else { 
@@ -368,7 +383,7 @@ cl = NULL) {
         }
     }
     
-    if(is.na(Psi.d)) {
+    if(anyNA(Psi.d)) {
         if(standardise) Psi.d <- diag(k1)
         else Psi.d <- 30*cov.d
     } else { 
@@ -410,8 +425,9 @@ cl = NULL) {
     }
     
     if(is.na(b.h)) {
-        if(standardise) b.h <- 2
-        else b.h <- var.h
+        if(standardise) {
+            b.h <- 0.5
+        } else b.h <- var.h/2
     } else { 
         if(length(b.h) != 1) {
             stop(paste0("'b.h' must be a constant"))
@@ -419,8 +435,9 @@ cl = NULL) {
     }
     
     if(is.na(b.d)) {
-        if(standardise) b.d <- 2
-        else b.d <- var.d
+        if(standardise) {
+            b.d <- 0.5
+        } else b.d <- var.d/2
     } else { 
         if(length(b.d) != 1) {
             stop(paste0("'b.d' must be a constant"))
@@ -428,36 +445,23 @@ cl = NULL) {
     }
     
     if(L.h > 1) {
-        if(is.na(aalpha.h)) {
-            aalpha.h <- 2 
-        } else { 
-            if(length(aalpha.h) != 1) {
-                stop(paste0("aalpha must be a constant"))
-            }
+        if(is.na(alpha.h)) {
+            alpha.h <- 1
         }
-        if(is.na(balpha.h)) {
-            balpha.h <- 2 
-        } else { 
-            if(length(balpha.h) != 1) {
-                stop(paste0("balpha must be a constant"))
+        else{
+            if(length(alpha.h) != 1) {
+                stop(paste0("alpha must be a constant"))
             }
         }
     }
     
     if(L.d > 1) {
-        if(is.na(aalpha.d)) {
-            aalpha.d <- 2 
-        } else {
-            if(length(aalpha.d) != 1) {
-                stop(paste0("aalpha must be a constant"))
-            }
+        if(is.na(alpha.d)) {
+            alpha.d <- 1
         }
-        
-        if(is.na(balpha.d)) {
-            balpha.d <- 2
-        } else {
-            if(length(balpha.d) != 1) {
-                stop(paste0("balpha must be a constant"))
+        else{
+            if(length(alpha.d) != 1) {
+                stop(paste0("alpha must be a constant"))
             }
         }
     }
@@ -490,8 +494,7 @@ cl = NULL) {
         Psi = Psi.h,
         a = a.h,
         b = b.h,
-        aalpha = aalpha.h,
-        balpha = balpha.h,
+        alpha = alpha.h,
         L = L.h),
         mcmc = mcmc,
         standardise = standardise)
@@ -511,7 +514,7 @@ cl = NULL) {
         prior = list(m0 = m0.d, S0 = S0.d,
         nu = nu.d, Psi = Psi.d,
         a = a.d, b = b.d,
-        aalpha = aalpha.d, balpha = balpha.d,
+        alpha = alpha.d,
         L = L.d),
         mcmc = mcmc,
         standardise = standardise)
@@ -594,31 +597,31 @@ cl = NULL) {
     npred <- nrow(X0p)
 
     aucddpm <- apply(aucddp, 2, mean)
-    aucddpl <- apply(aucddp, 2, quantile, prob = 0.025)
-    aucddph <- apply(aucddp, 2, quantile, prob = 0.975)
+    aucddpl <- apply(aucddp, 2, quantile, prob = alpha)
+    aucddph <- apply(aucddp, 2, quantile, prob = 1-alpha)
     
     rocddpm <- rocddpl <- rocddph <- matrix(0, nrow = np, ncol = npred)
     for(l in 1:npred){
         for(i in 1:np){
             rocddpm[i,l] <- mean(rocddp[i,,l])
-            rocddpl[i,l] <- quantile(rocddp[i,,l],0.025)
-            rocddph[i,l] <- quantile(rocddp[i,,l],0.975)
+            rocddpl[i,l] <- quantile(rocddp[i,,l],alpha)
+            rocddph[i,l] <- quantile(rocddp[i,,l],1-alpha)
         }
     }
     
     if(pauc$compute) {
         paucddpm <- apply(paucddp, 2, mean)
-        paucddpl <- apply(paucddp, 2, quantile, prob = 0.025)
-        paucddph <- apply(paucddp, 2, quantile, prob = 0.975)
+        paucddpl <- apply(paucddp, 2, quantile, prob = alpha)
+        paucddph <- apply(paucddp, 2, quantile, prob = 1-alpha)
     }
     
     meanfun.d.m <- apply(meanfun.d, 1, mean)
-    meanfun.d.l <- apply(meanfun.d, 1, quantile, prob = 0.025)
-    meanfun.d.h <- apply(meanfun.d, 1, quantile, prob = 0.975)
+    meanfun.d.l <- apply(meanfun.d, 1, quantile, prob = alpha)
+    meanfun.d.h <- apply(meanfun.d, 1, quantile, prob = 1-alpha)
     
     meanfun.h.m <- apply(meanfun.h, 1, mean)
-    meanfun.h.l <- apply(meanfun.h, 1, quantile, prob = 0.025)
-    meanfun.h.h <- apply(meanfun.h, 1, quantile, prob = 0.975)
+    meanfun.h.l <- apply(meanfun.h, 1, quantile, prob = alpha)
+    meanfun.h.h <- apply(meanfun.h, 1, quantile, prob = 1-alpha)
     
     res <- list()
     res$call <- match.call()
@@ -630,12 +633,13 @@ cl = NULL) {
     res$tag.h <- tag.h
     res$mcmc <- mcmc
     res$p <- p
+    res$ci.level <- ci.level
     res$prior <- list()
     if(L.d > 1){
         res$prior$d <-list(m0 = m0.d, S0 = S0.d,
         nu = nu.d, Psi = Psi.d,
         a = a.d, b = b.d,
-        aalpha = aalpha.d, balpha = balpha.d,
+        alpha = alpha.d,
         L = L.d)
     }
     if(L.d == 1){
@@ -648,7 +652,7 @@ cl = NULL) {
         res$prior$h <- list(m0 = m0.h, S0 = S0.h,
         nu = nu.h, Psi = Psi.h,
         a = a.h, b = b.h,
-        aalpha = aalpha.h, balpha = balpha.h,
+        alpha = alpha.h,
         L = L.h)
     }
     if(L.h == 1){

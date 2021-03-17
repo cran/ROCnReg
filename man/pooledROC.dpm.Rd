@@ -9,7 +9,7 @@ This function estimates the pooled ROC curve using a Dirichlet process mixture o
 }
 \usage{
 pooledROC.dpm(marker, group, tag.h, data, 
-  standardise = TRUE, p = seq(0, 1, l = 101),
+  standardise = TRUE, p = seq(0, 1, l = 101), ci.level = 0.95, 
   compute.lpml = FALSE, compute.WAIC = FALSE, compute.DIC = FALSE, 
   pauc = pauccontrol(), density = densitycontrol(), 
   prior.h = priorcontrol.dpm(), prior.d = priorcontrol.dpm(),
@@ -24,6 +24,7 @@ pooledROC.dpm(marker, group, tag.h, data,
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{standardise}{A logical value. If TRUE the test outcomes are standardised (so that the resulting test outcomes have mean zero and standard deviation of one). The default is TRUE.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve. This set is also used to compute the area under the ROC curve (AUC) using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the level for the credible interval. The default is 0.95.}
   \item{compute.lpml}{A logical value. If TRUE, the log pseudo marginal likelihood (LPML, Geisser and Eddy, 1979) and the conditional predictive ordinates (CPO) are computed.}
   \item{compute.WAIC}{A logical value. If TRUE, the widely applicable information criterion (WAIC, Gelman et al., 2014; Watanabe, 2010) is computed.}
   \item{compute.DIC}{A logical value. If TRUE, the deviance information criterion is computed.}
@@ -60,15 +61,16 @@ As a result, the function provides a list with the following components:
 \item{marker}{A list with the diagnostic test outcomes in the healthy (h) and diseased (d) groups.}
 \item{missing.ind}{A logical value indicating whether missing values occur.}
 \item{p}{Set of false positive fractions (FPF) at which the pooled ROC curve has been estimated.}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
 \item{prior}{A list returning the hyperparameter values in the healthy and diseased populations.}
-\item{ROC}{Estimated pooled ROC curve, and corresponding 95\% pointwise credible band.}
-\item{AUC}{Estimated pooled AUC, and corresponding 95\% credible interval.}
-\item{pAUC}{If computed, estimated partial area under the pooled ROC curve (posterior mean) and 95\% pointwise credible band. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
+\item{ROC}{Estimated pooled ROC curve, and corresponding \code{ci.level}*100\% pointwise credible band.}
+\item{AUC}{Estimated pooled AUC, and corresponding \code{ci.level}*100\% credible interval.}
+\item{pAUC}{If computed, estimated partial area under the pooled ROC curve (posterior mean) and \code{ci.level}*100\% pointwise credible band. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 \item{dens}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: \code{grid} (grid of test outcomes where the densities are evaluated) and \code{dens} (MCMC realisations of the corresponding densities).}
 \item{lpml}{If computed, named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: the log pseudo marginal likelihood (LPML) and the conditional predictive ordinates (CPO).}
 \item{WAIC}{If computed, named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: widely applicable information criterion (WAIC) and associated complexity penalty (pW).}
 \item{DIC}{If computed, named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: deviance information criterion (DIC) and associated complexity penalty (pD).}
-\item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with the following information: (1)\code{P}: matrix of dimension nsavexL with the sampled components' weights; (2) \code{Mu}: matrix of dimension nsavexL with the sampled means; and (3) \code{Sigma2}: matrix of dimension nsavexL with the sampled variances. Here, nsave is the number of Gibbs sampler iterates saved, and L is the upper bound on the number of mixture components.}
+\item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with the following information: (1)\code{probs}: matrix of dimension nsave x L with the sampled components' weights; (2) \code{mu}: matrix of dimension nsave x L with the sampled means; and (3) \code{sd}: matrix of dimension nsave x L with the sampled standard deviations. Here, nsave is the number of Gibbs sampler iterates saved, and L is the upper bound on the number of mixture components.}
 }
 \references{
 Erkanli, A., Sung M., Jane Costello, E., and Angold, A. (2006). Bayesian semi-parametric ROC analysis. Statistics in Medicine, \bold{25}, 3905--3928.
@@ -106,10 +108,10 @@ m0_dpm <- pooledROC.dpm(marker = "l_marker1", group = "status",
             tag.h = 0, data = newpsa, standardise = TRUE, 
             p = seq(0,1,l=101), compute.WAIC = TRUE, compute.lpml = TRUE, 
             compute.DIC = TRUE, 
-            prior.h = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 
-            balpha = 2, L =10),
-            prior.d = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 
-            balpha = 2, L =10),
+            prior.h = priorcontrol.dpm(m0 = 0, S0 = 10, a = 2, b = 0.5, alpha = 1, 
+            L =10),
+            prior.d = priorcontrol.dpm(m0 = 0, S0 = 10, a = 2, b = 0.5, alpha = 1, 
+            L =10),
             mcmc = mcmccontrol(nsave = 400, nburn = 100, nskip = 1))
 
 summary(m0_dpm)
@@ -121,11 +123,11 @@ m0_dpm <- pooledROC.dpm(marker = "l_marker1", group = "status",
             tag.h = 0, data = newpsa, standardise = TRUE, 
             p = seq(0,1,l=101), compute.WAIC = FALSE, compute.lpml = FALSE, 
             compute.DIC = FALSE, 
-            prior.h = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 
-            balpha = 2, L =10),
-            prior.d = priorcontrol.dpm(m0 = 0, S0 = 100, a = 2, b = 2, aalpha = 2, 
-            balpha = 2, L =10),
-            mcmc = mcmccontrol(nsave = 400, nburn = 100, nskip = 1))
+            prior.h = priorcontrol.dpm(m0 = 0, S0 = 10, a = 2, b = 0.5, alpha = 1, 
+            L =10),
+            prior.d = priorcontrol.dpm(m0 = 0, S0 = 10, a = 2, b = 0.5, alpha = 1, 
+            L =10),
+            mcmc = mcmccontrol(nsave = 40, nburn = 10, nskip = 1))
 
 summary(m0_dpm)
 

@@ -29,12 +29,14 @@ function(..., by = NULL, K = 0) {
 
 	if(d == 1 & is.null(args$by)) { # 1D Smooth effect			   
 		cov <- c("-1", term[1])
+		vars <- term[1]
 	} else if (d == 1 & !is.null(args$by)) { # Factor by curve 	  
 		cov <- c(deparse(args$by, backtick = TRUE, width.cutoff = 500), term[1])
+		vars <- cov
 	} else {
 		stop("Invalid expression")
 	}
 
-	res <- list(term = term, cov = cov, K = K)
+	res <- list(term = term, cov = cov, vars = vars, K = K)
 	res
 }

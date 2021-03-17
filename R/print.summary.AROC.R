@@ -9,6 +9,15 @@ function(x, digits = max(3L, getOption("digits") - 3L), ...) {
 	if(!is.null(x$pAUC)) {
 		cat(paste0("\n", x$pAUC))
 	}
+
+	if(x$bayesian) {
+		cat("\n * Credible level: ", x$ci.level)
+	} else {
+		if(x$ci.fit) {
+			cat("\n * Confidence level: ", x$ci.level)
+		}
+	}
+
 	if(!is.null(x$kernel.regfun)) {
 		cat("\n\nRegression function:\n\n")
 		print(x$kernel.regfun$bw, quote = FALSE, right = TRUE, na.print = "", print.gap = 5)

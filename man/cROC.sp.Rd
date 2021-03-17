@@ -10,7 +10,7 @@ This function estimates the covariate-specific ROC curve (cROC) using the parame
 \usage{
 cROC.sp(formula.h, formula.d, group, tag.h, data, 
   newdata, est.cdf = c("normal", "empirical"),
-  pauc = pauccontrol(), p = seq(0, 1, l = 101), B = 1000,
+  pauc = pauccontrol(), p = seq(0, 1, l = 101), B = 1000, ci.level = 0.95,
   parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -25,6 +25,7 @@ cROC.sp(formula.h, formula.d, group, tag.h, data,
   \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the covariate-adjusted ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-specific ROC curve. This set is also used to compute the area under the covariate-specific ROC curve using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. By default 1000.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
   \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
   \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
@@ -62,11 +63,12 @@ where \eqn{ROC_{TNF}(p|\mathbf{x})} is a \eqn{270^\circ} rotation of the ROC cur
 \item{formula}{Named list of length two with the value of the arguments \code{formula.h} and \code{formula.d} used in the call.}
 \item{est.cdf}{The value of the argument \code{est.cdf} used in the call.}
 \item{p}{Set of false positive fractions (FPF) at which the covariate-specific ROC curves have been estimated.}
-\item{ROC}{Estimated covariate-specific ROC curve, and 95\% pointwise confidence intervals (if computed).}
-\item{AUC}{Estimated area under the covariate-specific ROC curve, and 95\% confidence interval (if computed). }
-\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve and 95\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
+\item{ROC}{Estimated covariate-specific ROC curve, and \code{ci.level}*100\% pointwise confidence intervals (if computed).}
+\item{AUC}{Estimated area under the covariate-specific ROC curve, and \code{ci.level}*100\% confidence interval (if computed). }
+\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve and \code{ci.level}*100\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
 \item{fit}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component contains an object of class \code{\link[stats]{lm}} with the fitted regression model.}
-\item{coeff}{Estimated regression coefficients (and 95\% confidence interval if \code{B} greater than zero) from the fit of the linear model in the healthy and diseased population, as specified in \code{formula.h} and \code{formula.d}, respectively.}
+\item{coeff}{Estimated regression coefficients (and \code{ci.level}*100\% confidence interval if \code{B} greater than zero) from the fit of the linear model in the healthy and diseased population, as specified in \code{formula.h} and \code{formula.d}, respectively.}
 }
 \references{
 Faraggi, D. (2003). Adjusting receiver operating characteristic curves and related indices for covariates. \emph{The Statistician} \bold{52}, 179--192.

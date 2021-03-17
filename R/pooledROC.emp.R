@@ -1,5 +1,5 @@
 pooledROC.emp <-
-function(marker, group, tag.h, data, p = seq(0,1,l=101), B = 1000, method = c("ncoutcome","coutcome"), pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(marker, group, tag.h, data, p = seq(0,1,l=101), B = 1000, ci.level = 0.95, method = c("ncoutcome","coutcome"), pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     doBoostROC <- function(i, data, method, pauc, p) {
         data.boot <- bootstrap.sample(data, "group", method = method)
         yhb <- data.boot$y[data.boot$group == 0]
@@ -69,6 +69,12 @@ function(marker, group, tag.h, data, p = seq(0,1,l=101), B = 1000, method = c("n
 
     n1 <- length(yd.wom)
     n0 <- length(yh.wom)
+
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
     
     res <- compute.ROC(yh = yh.wom, yd = yd.wom, pauc = pauc, p = p)
     rocemp <- res$ROC
@@ -134,11 +140,11 @@ function(marker, group, tag.h, data, p = seq(0,1,l=101), B = 1000, method = c("n
     AUC <- aucemp
     pAUC <- paucemp
     if(B > 0) {
-        poolROC[,2] <- apply(rocempb, 1, quantile, prob = 0.025)
-        poolROC[,3] <- apply(rocempb, 1, quantile, prob = 0.975)
-        AUC <- c(AUC, quantile(aucempb,c(0.025,0.975)))
+        poolROC[,2] <- apply(rocempb, 1, quantile, prob = alpha)
+        poolROC[,3] <- apply(rocempb, 1, quantile, prob = 1-alpha)
+        AUC <- c(AUC, quantile(aucempb,c(alpha,1-alpha)))
         if(pauc$compute) {
-            pAUC <- c(pAUC, quantile(paucempb,c(0.025,0.975)))
+            pAUC <- c(pAUC, quantile(paucempb,c(alpha,1-alpha)))
         }
     }
     names(AUC) <- col.names
@@ -151,6 +157,7 @@ function(marker, group, tag.h, data, p = seq(0,1,l=101), B = 1000, method = c("n
     res$marker <- list(h = yh, d = yd)
     res$missing.ind <- list(h = omit.h, d = omit.d)
     res$p <- p
+    res$ci.level <- ci.level
     res$ROC <- poolROC
     res$AUC <- AUC
     if(pauc$compute) {

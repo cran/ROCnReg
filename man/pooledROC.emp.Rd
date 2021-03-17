@@ -9,7 +9,7 @@ This function estimates the pooled ROC curve using the empirical estimator propo
 }
 \usage{
 pooledROC.emp(marker, group, tag.h, data, 
-	p = seq(0, 1, l = 101), B = 1000, 
+	p = seq(0, 1, l = 101), B = 1000, ci.level = 0.95, 
     method = c("ncoutcome", "coutcome"), pauc = pauccontrol(),
   	parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
@@ -20,6 +20,7 @@ pooledROC.emp(marker, group, tag.h, data,
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve.}
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{method}{A character string specifying if bootstrap resampling (for the confidence intervals) should be done with or without regard to the disease status (``coutcome'' or ``noutcome''). In both cases, a naive bootstrap is used. By default, the resampling is done conditionally on the disease status.}
  \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
  \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
@@ -45,9 +46,10 @@ As a result, the function provides a list with the following components:
 \item{marker}{A list with the diagnostic test outcomes in the healthy (h) and diseased (d) groups.}
 \item{missing.ind}{A logical value indicating whether missing values occur.}
 \item{p}{Set of false positive fractions (FPF) at which the pooled ROC curve has been estimated.}
-\item{ROC}{Estimated pooled ROC curve, and corresponding 95\% pointwise confidence band (if computed).}
-\item{AUC}{Estimated pooled AUC, and corresponding 95\% confidence interval (if computed).}
-\item{pAUC}{If computed, estimated partial area under the pooled ROC curve along with its 95\% confidence interval (if B greater than zero). Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
+\item{ROC}{Estimated pooled ROC curve, and corresponding \code{ci.level}*100\% pointwise confidence band (if computed).}
+\item{AUC}{Estimated pooled AUC, and corresponding \code{ci.level}*100\% confidence interval (if computed).}
+\item{pAUC}{If computed, estimated partial area under the pooled ROC curve along with its \code{ci.level}*100\% confidence interval (if B greater than zero). Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 }
 \references{
 Hsieh, F., and Turnbull, B.W. (1996). Nonparametric and semiparametric estimation of the receiver operating characteristic curve, The Annals of Statistics, \bold{24}, 25--40.

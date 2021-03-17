@@ -8,7 +8,7 @@ function(x, ...) {
 
 	auc_aauc <- "Area under the covariate-adjusted ROC curve"
 	if(length(x$AUC) == 3) {
-		AUC <- paste0(auc_aauc, ": ", paste(round(x$AUC[1], 3), " (", round(x$AUC[2], 3),"",", ", round(x$AUC[3], 3),")", sep = ""))
+		AUC <- paste0(auc_aauc, ": ", paste(round(x$AUC[1], 3), " (", round(x$AUC[2], 3),"",", ", round(x$AUC[3], 3),")*", sep = ""))
 	} else {
 		AUC <- paste0(auc_aauc, ": ", round(x$AUC[1], 3))
 	}
@@ -23,11 +23,18 @@ function(x, ...) {
 
 
 		if(length(x$pAUC) == 3) {
-			pAUC <- paste0(p_auc_aauc, ": ", paste(round(x$pAUC[1], 3), " (", round(x$pAUC[2], 3),"",", ", round(x$pAUC[3], 3),")", sep = ""))
+			pAUC <- paste0(p_auc_aauc, ": ", paste(round(x$pAUC[1], 3), " (", round(x$pAUC[2], 3),"",", ", round(x$pAUC[3], 3),")*", sep = ""))
 		} else {
 			pAUC <- paste0(p_auc_aauc, ": ", round(x$pAUC[1], 3))
 		}
 		cat(paste0(pAUC, "\n"))
+	}
+	if(class(x)[1] == "AROC.bnp") {
+		cat("\n * Credible level: ", x$ci.level, "\n")
+	} else {
+		if(length(x$AUC) == 3) {
+			cat("\n * Confidence level: ", x$ci.level, "\n")
+		}
 	}
 	invisible(x)
 }

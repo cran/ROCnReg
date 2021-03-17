@@ -1,5 +1,5 @@
 pooledROC.kernel <-
-function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"), B = 1000, method = c("ncoutcome","coutcome"), pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"), B = 1000, ci.level = 0.95, method = c("ncoutcome","coutcome"), pauc = pauccontrol(), parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
     
     doBoostROC <- function(i, data, method, pauc, p, bw) {
         data.boot <- bootstrap.sample(data, "group", method = method)
@@ -85,6 +85,12 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"
 
     n1 <- length(yd.wom)
     n0 <- length(yh.wom)
+
+    # Level credible interval
+    if(ci.level <= 0 || ci.level >= 1) {
+        stop("The ci.level should be between 0 and 1")
+    }
+    alpha <- (1-ci.level)/2
     
     obj <- compute.ROC(yh = yh.wom, yd = yd.wom, pauc = pauc, p = p, bw = bw)
     rock <- obj$ROC
@@ -153,11 +159,11 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"
         pAUC <- pauck
     }
     if(B > 0) {
-        poolROC[,2] <- apply(rockb,1, quantile, prob = 0.025)
-        poolROC[,3] <- apply(rockb,1, quantile, prob = 0.975)
-        AUC <- c(AUC, quantile(auckb,c(0.025,0.975)))
+        poolROC[,2] <- apply(rockb,1, quantile, prob = alpha)
+        poolROC[,3] <- apply(rockb,1, quantile, prob = 1-alpha)
+        AUC <- c(AUC, quantile(auckb,c(alpha,1-alpha)))
         if(pauc$compute){
-            pAUC <- c(pAUC, quantile(pauckb,c(0.025,0.975)))
+            pAUC <- c(pAUC, quantile(pauckb,c(alpha,1-alpha)))
         }
     }
     names(AUC) <- col.names
@@ -172,6 +178,7 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101),  bw = c("SRT","UCV"
     res$bws <- obj$bws
     res$bw <- bw
     res$p <- p
+    res$ci.level <- ci.level
     res$ROC <- poolROC
     res$AUC <- AUC
     if(pauc$compute){

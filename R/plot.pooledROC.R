@@ -7,7 +7,11 @@ function(x, main = NULL, ...) {
     } else {
         main
     }
-	main.auc <- "AUC"
+    if(length(x$AUC) == 3) {
+		main.auc <- paste0("AUC (", x$ci.level*100, "% CI)")
+	} else {
+		main.auc <- "AUC"
+	}
 
 	type.lines <- if(class(x)[2] %in% c("pooledROC.emp")) {
 		"s"
@@ -26,6 +30,10 @@ function(x, main = NULL, ...) {
 	} else {
 		legend.text <- paste0(main.auc, ": ", round(x$AUC[1], 3))
 	}
-	legend(0.4, 0.2, legend.text, bty = "n", cex = if(!is.null(dots$cex)) dots$cex else 1.3)
+	if(length(x$AUC) == 3) {
+		legend(0.2, 0.2, legend.text, bty = "n", cex = if(!is.null(dots$cex)) dots$cex else 1.3)
+	} else {
+		legend(0.4, 0.2, legend.text, bty = "n", cex = if(!is.null(dots$cex)) dots$cex else 1.3)
+	}
 
 }

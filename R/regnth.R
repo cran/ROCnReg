@@ -61,7 +61,7 @@ function(y, X, prior, mcmc, standardise = TRUE) {
                    #mvrnorm(1, mu = Vaux%*%(V0inv[i-1,,]%*%t(t(beta[i,]))+solve(S0)%*%m0), Sigma = Vaux) 
                    #rmvn(1, mu = Vaux%*%(V0inv[i-1,,]%*%t(t(beta[i,]))+solve(S0)%*%m0), sigma = Vaux)
         
-        V0inv[i,,] <- rWishart(1, df = nu0+1, solve(nu0*psi0 + as.numeric(crossprod(beta[i,]-mu0[i,]))))
+        V0inv[i,,] <- rWishart(1, df = nu0+1, solve(nu0*psi0 + tcrossprod(beta[i,]-mu0[i,])))
         #V0inv[i,,] <- rWishart(1, df = nu0+1,solve(nu0*psi0+as.numeric((beta[i,]-mu0[i,])%*%t(t(beta[i,]-mu0[i,])))))
         
     }

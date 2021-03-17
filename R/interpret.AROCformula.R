@@ -49,7 +49,7 @@ function(formula, data) {
                 h[[k]] <- -1
                 K_total[[k]] <- st$K
                 partial[k] <- terms[i]
-                vars.formula <- c(vars.formula, st$term)           
+                vars.formula <- c(vars.formula, st$vars)           
             }
         }
         # Parametric (linear and categorical: all in one)
@@ -64,7 +64,7 @@ function(formula, data) {
 
         }
         #names.cov <- all.vars(formula)[-1]
-        names.cov <- vars.formula
+        names.cov <- unique(vars.formula)
         data.cov <- data[, names(data) %in% names.cov, drop = FALSE]
         #numeric.var <- names.cov[!apply(data.cov, 2, is.factor)]
         numeric.var <- names.cov[!sapply(names.cov, function(x, data) is.factor(data[,x]), data = data.cov)]

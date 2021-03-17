@@ -9,7 +9,7 @@ This function estimates the covariate-specific ROC curve (cROC) using the nonpar
 }
 \usage{
 cROC.bnp(formula.h, formula.d, group, tag.h, data, 
-    newdata, standardise = TRUE, p = seq(0, 1, l = 101), 
+    newdata, standardise = TRUE, p = seq(0, 1, l = 101), ci.level = 0.95,
     compute.lpml = FALSE, compute.WAIC = FALSE, compute.DIC = FALSE, 
     pauc = pauccontrol(), density = densitycontrol(),
     prior.h = priorcontrol.bnp(), prior.d = priorcontrol.bnp(), 
@@ -25,6 +25,7 @@ cROC.bnp(formula.h, formula.d, group, tag.h, data,
   \item{newdata}{Optional data frame containing the values of the covariates at which the covariate-specific ROC curve (AUC and pAUC, if computed) will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
    \item{standardise}{A logical value. If TRUE both the test outcomes and the continuous covariates assumed to have a linear effect are standardised (i.e., the resulting variables have mean zero and standard deviation of one). The default is TRUE.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-specific ROC curve.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the level for the credible interval. The default is 0.95.}
   \item{compute.lpml}{A logical value. If TRUE, the log pseudo marginal likelihood (LPML, Geisser and Eddy, 1979) and the conditional predictive ordinates (CPO) are computed.}
   \item{compute.WAIC}{A logical value. If TRUE, the widely applicable information criterion (WAIC, Gelman et al., 2014; Watanabe, 2010) is computed.}
   \item{compute.DIC}{A logical value. If TRUE, the deviance information criterion (DIC)(Celeux et al., 2006, Spiegelhalter et al., 2002) is computed.}
@@ -68,13 +69,14 @@ As a result, the function provides a list with the following components:
 \item{group}{The value of the argument \code{group} used in the call.}
 \item{tag.h}{The value of the argument \code{tag.h} used in the call.}
 \item{p}{Set of false positive fractions (FPF) at which the covariate-specific ROC curve has been estimated.}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
 \item{prior}{A list returning the hyperparameter values in the healthy and diseased populations.}
-\item{ROC}{A list returning the \code{np} (length of the vector \code{p}) by npred predicted covariate-specific ROC curves (cROC) (posterior mean) and 95\% pointwise posterior credible bands.}
-\item{AUC}{Estimated area under the covariate-specific ROC curve (posterior mean) and 95\% posterior credible band.}
-\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve (posterior mean) and 95\%  credible
+\item{ROC}{A list returning the \code{np} (length of the vector \code{p}) by npred predicted covariate-specific ROC curves (cROC) (posterior mean) and \code{ci.level}*100\% pointwise posterior credible bands.}
+\item{AUC}{Estimated area under the covariate-specific ROC curve (posterior mean) and \code{ci.level}*100\% posterior credible band.}
+\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve (posterior mean) and \code{ci.level}*100\%  credible
 band. Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 \item{dens}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: \code{grid} (grid of test outcomes where the conditional densities were evaluated) and \code{dens} (MCMC realisations of the corresponding conditional densities).}
-\item{reg.fun}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a data frame containing the predicted regression function (posterior mean) and 95\% credible band.}
+\item{reg.fun}{Named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a data frame containing the predicted regression function (posterior mean) and \code{ci.level}*100\% credible band.}
 \item{lpml}{If computed, named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: the log pseudo marginal likelihood (LPML) and the conditional predictive ordinates (CPO).}
 \item{WAIC}{If computed, named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: widely applicable information criterion (WAIC) and associated complexity penalty (pW).}
 \item{DIC}{If computed, named list of length two, with components 'h' (healthy) and 'd' (diseased). Each component is a list with two components: deviance information criterion (DIC) and associated complexity penalty (pD).}

@@ -9,7 +9,7 @@ This function implements methods for estimating AROC-based threshold values.
 }
 \usage{
 compute.threshold.AROC(object, criterion = c("FPF", "YI"), FPF, newdata,
-  parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
+  ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -17,6 +17,7 @@ compute.threshold.AROC(object, criterion = c("FPF", "YI"), FPF, newdata,
   \item{criterion}{A character string indicating whether the covariate-adjusted threshold values should be computed based on the Youden index (``YI'') or for a fixed set of false positive fractions (``FPF'').}
   \item{FPF}{For criterion = FPF, a numeric vector with the FPF at which to calculate the AROC-based threshold values. Atomic values are also valid.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the AROC-based threshold values will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
   \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
   \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
@@ -38,9 +39,9 @@ In both cases, we use the notation \eqn{c^{*}_{\mathbf{x}}} to emphasise that th
 As a result, the function provides a list with the following components:
 \item{call}{The matched call.}
 \item{newdata}{Data frame containing the values of the covariates at which the AROC-based thresholds were computed.}
-\item{thresholds}{If method = "YI", the estimated AROC-based threshold corresponding to the Youden index, and if method = "FPF", AROC-based threshold corresponding to the specified FPF. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the 95\% pointwise credible band is also returned.}
-\item{YI}{If criterion = "YI", the AROC-based Youden index. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the 95\% pointwise credible band is also returned.}
-\item{FPF}{If criterion = "YI", the FPF where the Youden index is attained, and if criterion = "FPF", the supplied FPF argument. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the 95\% pointwise credible band is also returned.}
+\item{thresholds}{If method = "YI", the estimated AROC-based threshold corresponding to the Youden index, and if method = "FPF", AROC-based threshold corresponding to the specified FPF. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
+\item{YI}{If criterion = "YI", the AROC-based Youden index. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
+\item{FPF}{If criterion = "YI", the FPF where the Youden index is attained, and if criterion = "FPF", the supplied FPF argument. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
 }
 \references{
 Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. arXiv preprint arXiv:1806.00473.
@@ -78,7 +79,7 @@ AROC_bnp <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               p = seq(0,1,l=101),
               prior = priorcontrol.bnp(m0 = rep(0, 4), 
               S0 = 10*diag(4), nu = 6, Psi = diag(4),
-              a = 2, b = 2, aalpha = 2, balpha = 2, L =10),
+              a = 2, b = 0.5, alpha = 1, L =10),
               mcmc = mcmccontrol(nsave = 500, nburn = 100, nskip = 1))
 
 ### Threshold values based on the YI
@@ -112,7 +113,7 @@ AROC_bnp <- AROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               standardise = TRUE,
               p = seq(0,1,l=101),
               prior = priorcontrol.bnp(m0 = rep(0, 4), S0 = 10*diag(4), nu = 6, Psi = diag(4),
-              a = 2, b = 2, aalpha = 2, balpha = 2, L =10),
+              a = 2, b = 0.5, alpha = 1, L =10),
               mcmc = mcmccontrol(nsave = 20, nburn = 5, nskip = 1))
 
 ### Threshold values based on the YI

@@ -1,5 +1,5 @@
 compute.threshold.FPF.pooledROC.BB <-
-function(object, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
+function(object, FPF = 0.5, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	doMCMCTH <- function(k, y.h, weights.h, y.d, weights.d, FPF) {
 		thresholds.s <- quantile(ewcdf(y.h, weights.h[,k]), 1- FPF, type = 1)
 		TPF.s <- 1 - ewcdf(y.d, weights.d[,k])(thresholds.s)
@@ -75,21 +75,21 @@ function(object, FPF = 0.5, parallel = c("no", "multicore", "snow"), ncpus = 1, 
     } else {
         stop("B should be larger than zero.")
     }
-
+    alpha <- (1-ci.level)/2
 	np <- length(FPF)
 	thresholds <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
 	rownames(thresholds) <- FPF
 
 	thresholds[,1] <- apply(thresholds.s, 1, mean)
-	thresholds[,2] <- apply(thresholds.s, 1, quantile, prob = 0.025)
-	thresholds[,3] <- apply(thresholds.s, 1, quantile, prob = 0.975)
+	thresholds[,2] <- apply(thresholds.s, 1, quantile, prob = alpha)
+	thresholds[,3] <- apply(thresholds.s, 1, quantile, prob = 1 - alpha)
 
 	TPF <- matrix(0, ncol = 3, nrow = np, dimnames = list(1:np, c("est","ql", "qh")))
 	rownames(TPF) <- FPF
 
 	TPF[,1] <- apply(TPF.s, 1, mean)
-	TPF[,2] <- apply(TPF.s, 1, quantile, prob = 0.025)
-	TPF[,3] <- apply(TPF.s, 1, quantile, prob = 0.975)
+	TPF[,2] <- apply(TPF.s, 1, quantile, prob = alpha)
+	TPF[,3] <- apply(TPF.s, 1, quantile, prob = 1-alpha)
 
 	res <- list()
 	res$thresholds <- thresholds

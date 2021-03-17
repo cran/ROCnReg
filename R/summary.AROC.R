@@ -7,10 +7,14 @@ function(object, ...) {
 									   "AROC.bnp" = "AROC Bayesian nonparametric", 
 									   "AROC.sp" = "AROC semiparametric")
 	res$method <- method
+	alpha <- (1-object$ci.level)/2
+	
 	auc_aauc <- "Area under the covariate-adjusted ROC curve"
 	if(length(object$AUC) == 3) {
-		AUC <- paste0(auc_aauc, ": ", paste(round(object$AUC[1], 3), " (", round(object$AUC[2], 3),"",", ", round(object$AUC[3], 3),")", sep = ""))
+		ci.fit = TRUE
+		AUC <- paste0(auc_aauc, ": ", paste(round(object$AUC[1], 3), " (", round(object$AUC[2], 3),"",", ", round(object$AUC[3], 3),")*", sep = ""))
 	} else {
+		ci.fit = FALSE
 		AUC <- paste0(auc_aauc, ": ", round(object$AUC[1], 3))
 	}
 	res$AUC <- AUC
@@ -20,7 +24,7 @@ function(object, ...) {
 		p_auc_aauc <- paste0(p_auc_aauc, ifelse(attr(object$pAUC, "focus") == "FPF", " (FPF = ", " (Se = "), attr(object$pAUC, "value"), ")")
 
 		if(length(object$pAUC) == 3) {
-			pAUC <- paste0(p_auc_aauc, ": ", paste(round(object$pAUC[1], 3), " (", round(object$pAUC[2], 3),"",", ", round(object$pAUC[3], 3),")", sep = ""))
+			pAUC <- paste0(p_auc_aauc, ": ", paste(round(object$pAUC[1], 3), " (", round(object$pAUC[2], 3),"",", ", round(object$pAUC[3], 3),")*", sep = ""))
 		} else {
 			pAUC <- paste0(p_auc_aauc, ": ", round(object$pAUC[1], 3))
 		}
@@ -45,7 +49,7 @@ function(object, ...) {
 
 	if(class(object)[1] == "AROC.sp") {
 		if(ncol(object$coeff) == 3) {
-			colnames(object$coeff) <- c("Estimate", "Quantile 2.5%", "Quantile 97.5%")
+			colnames(object$coeff) <- c("Estimate", paste0("Quantile ", alpha*100, "%"), paste0("Quantile ", (1-alpha)*100, "%"))
 		} else {
 			colnames(object$coeff) <- c("Estimate")
 		}
@@ -101,6 +105,14 @@ function(object, ...) {
 	m[1,] <- c(sprintf("%.0f", nrow(object$data[object$data[,object$group] == object$tag.h,])), sprintf("%.0f", nrow(object$data[object$data[,object$group] != object$tag.h,])))
 	m[2,] <- c(sprintf("%.0f", sum(object$missing.ind$h)), sprintf("%.0f", sum(object$missing.ind$d)))
 	res$sz <- m
+	res$ci.fit <- ci.fit
+	res$ci.level <- object$ci.level
+
+	if(class(object)[1] == "AROC.bnp") {
+		res$bayesian = TRUE
+	} else {
+		res$bayesian = FALSE
+	}
 	
 	print.summary.AROC(res, ...)
 	invisible(res)	   	   	

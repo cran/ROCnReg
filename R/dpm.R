@@ -17,8 +17,7 @@ function(y, prior, mcmc, standardise = FALSE) {
     S0 <- prior$S0
     a <- prior$a
     b <- prior$b
-    aalpha <- prior$aalpha
-    balpha <- prior$balpha
+    alpha <- prior$alpha
     L <- prior$L
     
     nburn <- mcmc$nburn
@@ -49,9 +48,6 @@ function(y, prior, mcmc, standardise = FALSE) {
     Mu_tmp <- Mu[1,]
     Sigma2_tmp <- Sigma2[1,]
 
-    alpha <- numeric(nsim)
-    alpha[1] <- 1
-    
     for(i in 2:nsim) {
         Sigma2_tmp <- Sigma2[i-1,]
 
@@ -87,9 +83,9 @@ function(y, prior, mcmc, standardise = FALSE) {
         #for(l in 1:(L-1)){
         #    v[l] <- rbeta(1, 1 + ns[l], alpha[i-1] + sum(ns[(l+1):L]))
         #}
-        v[1:(L-1)] <- rbeta(L-1, 1 + ns[1:(L-1)], alpha[i-1] + rev(cumsum(rev(ns[-1]))))
+        v[1:(L-1)] <- rbeta(L-1, 1 + ns[1:(L-1)], alpha + rev(cumsum(rev(ns[-1]))))
         
-        alpha[i] <- rgamma(1, shape = aalpha + L, balpha - sum(log(v[1:(L-1)])))
+        #alpha[i] <- rgamma(1, shape = aalpha + L - 1, balpha - sum(log(1 - v[1:(L-1)])))
 
         varmu <- 1/((1/S0) + (ns/Sigma2_tmp))
         meanmu <- ((yt_z_l/Sigma2_tmp) + (m0/S0))/((1/S0) + (ns/Sigma2_tmp))

@@ -9,7 +9,7 @@ This function estimates the covariate-adjusted ROC curve (AROC) using the semipa
 \usage{
 AROC.sp(formula.h, group, tag.h, data, 
     est.cdf.h = c("normal", "empirical"), pauc = pauccontrol(),
-    p = seq(0, 1, l = 101), B = 1000,
+    p = seq(0, 1, l = 101), B = 1000, ci.level = 0.95, 
   	parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -22,6 +22,7 @@ AROC.sp(formula.h, group, tag.h, data,
  \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the covariate-adjusted ROC curve (pAAUC) should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the covariate-adjusted ROC curve. This set is also used to compute the area under the covariate-adjusted ROC curve (AAUC) using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
   \item{ncpus}{An integer with the number of processes to be used in parallel operation. Defaults to 1.}
   \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
@@ -52,11 +53,12 @@ As a result, the function provides a list with the following components:
 \item{formula}{The value of the argument \code{formula.h} used in the call.}
 \item{est.cdf.h}{The value of the argument \code{est.cdf.h} used in the call.}
 \item{p}{Set of false positive fractions (FPF) at which the covariate-adjusted ROC (AROC) curve has been estimated}
-\item{ROC}{Estimated covariate-adjusted ROC curve (AROC), and 95\% pointwise confidence bands (if computed)}
-\item{AUC}{Estimated area under the covariate-adjusted ROC curve (AAUC), and 95\% confidence intervals (if required).}
-\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve (pAAUC) and 95\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
+\item{ROC}{Estimated covariate-adjusted ROC curve (AROC), and \code{ci.level}*100\% pointwise confidence bands (if computed)}
+\item{AUC}{Estimated area under the covariate-adjusted ROC curve (AAUC), and \code{ci.level}*100\% confidence intervals (if required).}
+\item{pAUC}{If computed, estimated partial area under the covariate-adjusted ROC curve (pAAUC) and \code{ci.level}*100\%  confidence interval (if computed). Note that the returned values are normalised, so that the maximum value is one.}
 \item{fit}{Object of class \code{\link[stats]{lm}} with the fitted regression model in the healthy population.}
-\item{coeff}{Estimated regression coefficients (and 95\% confidence interval if \code{B} greater than zero) from the fit of the linear model in the healthy population, as specified in \code{formula.h}.}
+\item{coeff}{Estimated regression coefficients (and \code{ci.level}*100\% confidence interval if \code{B} greater than zero) from the fit of the linear model in the healthy population, as specified in \code{formula.h}.}
 }
 \references{
 Janes, H., and Pepe, M.S. (2009). Adjusting for covariate effects on classification accuracy using the covariate-adjusted receiver operating characteristic curve. Biometrika, 96(2), 371 - 382.

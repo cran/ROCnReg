@@ -10,7 +10,7 @@ This function estimates the pooled ROC curve using the kernel-based density esti
 \usage{
 pooledROC.kernel(marker, group, tag.h, data, 
 	p = seq(0, 1, l = 101), 
-	bw = c("SRT", "UCV"), B = 1000, 
+	bw = c("SRT", "UCV"), B = 1000, ci.level = 0.95, 
 	method = c("ncoutcome", "coutcome"), pauc = pauccontrol(),
   parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
@@ -22,7 +22,8 @@ pooledROC.kernel(marker, group, tag.h, data,
   \item{data}{Data frame representing the data and containing all needed variables.}
   \item{p}{Set of false positive fractions (FPF) at which to estimate the pooled ROC curve. This set is also used to compute the area under the ROC curve (AUC) using Simpson's rule. Thus, the length of the set should be an odd number, and it should be rich enough for an accurate estimation.}
   \item{bw}{A character string specifying the density bandwidth selection method. ``SRT'': Silverman's rule-of-thumb; ``UCV'': unbiased cross-validation. The default is ``SRT''. }
-  \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1900.}
+  \item{B}{An integer value specifying the number of bootstrap resamples for the construction of the confidence intervals. The default is 1000.}
+  \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{method}{A character string specifying if bootstrap resampling (for the confidence intervals) should be done with or without regard to the disease status (``coutcome'' or ``noutcome''). In both cases, a naive bootstrap is used. By default, the resampling is done conditionally on the disease status.}
   \item{pauc}{A list of control values to replace the default values returned by the function \code{\link{pauccontrol}}. This argument is used to indicate whether the partial area under the pooled ROC curve should be computed, and in case it is computed, whether the focus should be placed on restricted false positive fractions (FPFs) or on restricted true positive fractions (TPFs), and the upper bound for the FPF (if focus is FPF) or the lower bound for the TPF (if focus is TPF).}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
@@ -51,9 +52,10 @@ The area under the curve is \deqn{AUC=\int_{0}^{1}ROC(p)dp} and is computed nume
 \item{bws}{Named list of length two with components 'h' (healthy) and 'd' (diseased). Each component is a numeric value with the selected bandwidth.}
 \item{bw}{The value of the argument \code{bw} used in the call.}
 \item{p}{Set of false positive fractions (FPF) at which the pooled ROC curve has been estimated.}
-\item{ROC}{Estimated pooled ROC curve, and corresponding 95\% pointwise confidence band (if computed).}
-\item{AUC}{Estimated pooled AUC, and corresponding 95\% confidence interval (if computed).}
-\item{pAUC}{If computed, estimated partial area under the pooled ROC curve along with its 95\% confidence interval (if B greater than zero). Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
+\item{ci.level}{The value of the argument \code{ci.level} used in the call.}
+\item{ROC}{Estimated pooled ROC curve, and corresponding \code{ci.level}*100\% pointwise confidence band (if computed).}
+\item{AUC}{Estimated pooled AUC, and corresponding \code{ci.level}*100\% confidence interval (if computed).}
+\item{pAUC}{If computed, estimated partial area under the pooled ROC curve along with its \code{ci.level}*100\% confidence interval (if B greater than zero). Note that the returned values are normalised, so that the maximum value is one (see more on Details).}
 }
 \references{
 Zou, K.H., Hall, W.J., Shapiro, D.E. (1997) Smooth non-parametric receiver operating characteristic (ROC) curves for continuous diagnostic tests. Statistics in Medicine, \bold{16}, 2143--2156.
