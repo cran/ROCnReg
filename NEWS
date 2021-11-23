@@ -27,3 +27,10 @@
 	o	In the new version, we allow the user to specify the level for the credible/confidence intervals for different quantities. A new argument ci.level has been incorporated into the functions. By default 0.95.
 	o	Some default hyperparameter values have been modified. In particular, the rate parameter of the gamma prior distribution for the precisions (inverse variances) of each component has been set to 0.5 when data is standardised. See functions priorcontrol.dpm() and priorcontrol.bnp() for more details on the default values. Also, the precision parameter of the Dirichlet process prior (alpha) is now regarded as fixed (in the previous version we considered a gamma prior distrubution for it). 
 	o	For consistency with the output values of cROC.bnp and AROC.bnp, the names of some output values of function pooledROC.dpm have been modified (in particular, those returned in argument fit. See function pooledROC.dpm() for details).
+
+	CHANGES in `ROCnReg' VERSION 1.0-6
+		
+	o	Paper published in R-Journal. Citation added
+	o   Mantainer's email changed
+
+		

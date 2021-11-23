@@ -12,14 +12,14 @@
 \tabular{ll}{
 Package: \tab ROCnReg\cr
 Type: \tab Package\cr
-Version: \tab 1.0-5\cr
-Date: \tab 2021-03-17\cr
+Version: \tab 1.0-6\cr
+Date: \tab 2021-11-23\cr
 License: \tab GPL\cr
 }
 }
 \author{
 Maria Xose Rodriguez-Alvarez and Vanda Inacio 
-Maintainer: Maria Xose Rodriguez-Alvarez <mxrodriguez@bcamath.org>
+Maintainer: Maria Xose Rodriguez-Alvarez <mxrodriguez@uvigo.es>
 }
 \references{
 Erkanli, A., Sung M., Jane Costello, E., and Angold, A. (2006). Bayesian semi-parametric ROC analysis. Statistics in Medicine, \bold{25}, 3905--3928.

@@ -1,0 +1,20 @@
+citHeader("To cite ROCnReg in publications use:")
+
+citEntry(entry = "Article",
+  title        = "{ROCnReg}: An {R} Package for Receiver Operating Characteristic
+          Curve Inference With and Without Covariates",
+  author       = personList(as.person("Mar{\\'i}a Xos{\\'e} Rodr{\\'i}guez-{\\'A}lvarez"),
+                 as.person("Vanda I{\\'a}cio")),
+  journal      = "The R Journal",
+  year         = "2021",
+  volume       = "13",
+  number       = "1",
+  pages        = "525--555",
+  doi          = "10.32614/RJ-2021-066",
+
+  textVersion  =
+  paste("Maria Xose Rodriguez-Alvarez, Vanda Inacio (2021).",
+        "ROCnReg: An R Package for Receiver Operating Characteristic Curve Inference With and Without Covariates.",
+        "The R Journal, 13(1), 525-555.",
+        "DOI 10.32614/RJ-2021-066.")
+)

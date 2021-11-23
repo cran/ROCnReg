@@ -123,7 +123,7 @@ cROC_bnp <- cROC.bnp(formula.h = l_marker1 ~ f(age, K = 0),
               data = newpsa,
               standardise = TRUE,
               p = seq(0,1,l=101),
-              mcmc = mcmccontrol(nsave = 10, nburn = 5, nskip = 1))
+              mcmc = mcmccontrol(nsave = 5, nburn = 2, nskip = 1))
 
 ### Threshold values based on the YI
 th_cROC_bnp_yi <- compute.threshold.cROC(cROC_bnp, criterion = "YI")
