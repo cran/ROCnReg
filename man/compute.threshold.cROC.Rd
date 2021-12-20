@@ -108,11 +108,11 @@ th_cROC_bnp_fpf <- compute.threshold.cROC(cROC_bnp, criterion = "FPF", FPF = 0.1
 
 # Plot results
 	# Threshold values
-	plot(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[[0.1]][,"est"], 
+	plot(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[["0.1"]][,"est"], 
 		type = "l", xlab = "Age", 
 		ylab = "log(PSA)", ylim = c(0,3), main = "Threshold values for a FPF = 0.1")
-	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[[0.1]][,"qh"], lty = 2)
-	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[[0.1]][,"ql"], lty = 2)
+	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[["0.1"]][,"qh"], lty = 2)
+	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[["0.1"]][,"ql"], lty = 2)
 
 }
 \dontshow{
@@ -150,10 +150,10 @@ th_cROC_bnp_yi <- compute.threshold.cROC(cROC_bnp, criterion = "YI")
 
 ## Plot results
 #	# Threshold values
-#	plot(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[[0.1]][,"est"], type = "l", xlab = "Age", 
+#	plot(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[["0.1"]][,"est"], type = "l", xlab = "Age", 
 #		ylab = "log(PSA)", ylim = c(0,3), main = "Threshold values for a FPF = 0.1")
-#	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[[0.1]][,"qh"], lty = 2)
-#	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[[0.1]][,"ql"], lty = 2)
+#	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[["0.1"]][,"qh"], lty = 2)
+#	lines(th_cROC_bnp_yi$newdata$age, th_cROC_bnp_fpf$thresholds[["0.1"]][,"ql"], lty = 2)
 }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

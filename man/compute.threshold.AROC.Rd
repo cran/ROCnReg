@@ -97,12 +97,12 @@ lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_yi$thresholds[,"ql"], lty = 2)
 th_AROC_bnp_fpf <- compute.threshold.AROC(AROC_bnp, criterion = "FPF", FPF = 0.1)
 
 # Plot results
-plot(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"est"], 
+plot(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[["0.1"]][,"est"], 
 	type = "l", xlab = "Age", 
 	ylab = "log(PSA)", ylim = c(0,3), 
 	main = "Threshold values for a FPF = 0.1")
-lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"qh"], lty = 2)
-lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"ql"], lty = 2)
+lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[["0.1"]][,"qh"], lty = 2)
+lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[["0.1"]][,"ql"], lty = 2)
 
 }
 \dontshow{
@@ -131,12 +131,12 @@ lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_yi$thresholds[,"ql"], lty = 2)
 th_AROC_bnp_fpf <- compute.threshold.AROC(AROC_bnp, criterion = "FPF", FPF = 0.1)
 
 # Plot results
-plot(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"est"], 
+plot(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[["0.1"]][,"est"], 
 	type = "l", xlab = "Age", 
 	ylab = "log(PSA)", ylim = c(0,3), 
 	main = "Threshold values for a FPF = 0.1")
-lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"qh"], lty = 2)
-lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[[0.1]][,"ql"], lty = 2)
+lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[["0.1"]][,"qh"], lty = 2)
+lines(th_AROC_bnp_yi$newdata$age, th_AROC_bnp_fpf$thresholds[["0.1"]][,"ql"], lty = 2)
 }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
