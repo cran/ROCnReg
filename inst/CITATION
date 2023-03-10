@@ -1,10 +1,9 @@
 citHeader("To cite ROCnReg in publications use:")
 
-citEntry(entry = "Article",
+bibentry(bibtype = "Article",
   title        = "{ROCnReg}: An {R} Package for Receiver Operating Characteristic
           Curve Inference With and Without Covariates",
-  author       = personList(as.person("Mar{\\'i}a Xos{\\'e} Rodr{\\'i}guez-{\\'A}lvarez"),
-                 as.person("Vanda I{\\'a}cio")),
+  author       = c("Mar{\\'i}a Xos{\\'e} Rodr{\\'i}guez-{\\'A}lvarez", "Vanda In{\\'a}cio"),
   journal      = "The R Journal",
   year         = "2021",
   volume       = "13",

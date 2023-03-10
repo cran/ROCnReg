@@ -8,14 +8,15 @@ Covariate-specific ROC based threshold values.
 This function implements methods for estimating covariate-specific ROC-based threshold values.
 }
 \usage{
-compute.threshold.cROC(object, criterion = c("FPF", "YI"), FPF, newdata,
+compute.threshold.cROC(object, criterion = c("FPF", "TPF", "YI"), FPF, TPF, newdata,
   ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{object}{An object of class \code{cROC} as produced by \code{cROC.bnp()}, \code{cROC.sp()}, or \code{cROC.kernel()}.}
-  \item{criterion}{A character string indicating whether the covariate-specific threshold values should be computed based on the Youden index (``YI'') or for fixed set of false positive fractions (``FPF''). }
+  \item{criterion}{A character string indicating whether the covariate-specific threshold values should be computed based on the Youden index (``YI'') or for fixed false positive fractions (``FPF'') or true positive fractions (``TPF''). }
   \item{FPF}{For \code{criterion = "FPF"}, a numeric vector with the FPF at which to calculate the covariate-specific threshold values. Atomic values are also valid.}
+  \item{TPF}{For \code{criterion = "TPF"}, a numeric vector with the TPF at which to calculate the covariate-specific threshold values. Atomic values are also valid.}
   \item{newdata}{Optional data frame containing the values of the covariates at which the covariate-specific threshold values will be computed. If not supplied, the function \code{\link{cROCData}} is used to build a default dataset.}
   \item{ci.level}{An integer value (between 0 and 1) specifying the confidence level. The default is 0.95.}
   \item{parallel}{A characters string with the type of parallel operation: either "no" (default), "multicore" (not available on Windows) or "snow".}
@@ -23,7 +24,7 @@ compute.threshold.cROC(object, criterion = c("FPF", "YI"), FPF, newdata,
   \item{cl}{An object inheriting from class \code{cluster} (from the \code{parallel} package), specifying an optional parallel or snow cluster if parallel = "snow". If not supplied, a cluster on the local machine is created for the duration of the call.}
 }
 \details{
-Estimates covariate-specific ROC-based threshold values based on two different criteria, the Youden index (YI) and the one that gives rise to a pre-specified FPF.
+Estimates covariate-specific ROC-based threshold values based on three different criteria, namely, the Youden index (YI), one that gives rise to a pre-specified FPF, and one that gives rise to a pre-specified TPF.
 
 In the conditional case, the Youden index is defined as
 \deqn{YI(\mathbf{x}) = \max_{c}|TPF(c|\mathbf{x}) - FPF(c|\mathbf{x})| = \max_{c}|F_{\bar{D}}(c|\mathbf{x}) - F_{D}(c|\mathbf{x})|,}
@@ -31,17 +32,19 @@ where
 \deqn{F_{D}(y|\mathbf{x}) = Pr(Y_{D} \leq y | \mathbf{X}_{D} = \mathbf{x}),}
 \deqn{F_{\bar{D}}(y|\mathbf{x}) = Pr(Y_{\bar{D}} \leq y | \mathbf{X}_{\bar{D}} = \mathbf{x}).}
 The value \eqn{c^{*}_{\mathbf{x}}} that achieves the maximum is called the optimal covariate-specific YI threshold. Regarding the criterion for a fixed FPF, the covariate-specific threshold values are obtained as follows
-\deqn{c^{*}_{\mathbf{x}} = F_{\bar{D}}^{-1}(1-FPF|\mathbf{x}).}
-In both cases, we use the notation \eqn{c^{*}_{\mathbf{x}}} to emphasise that this value depends on covariate \eqn{\mathbf{x}}.
+\deqn{c^{*}_{\mathbf{x}} = F_{\bar{D}}^{-1}(1-FPF|\mathbf{x}),}
+and for a fixed TPF we have
+\deqn{c^{*}_{\mathbf{x}} = F_{D}^{-1}(1-TPF|\mathbf{x}),}
+In all cases, we use the notation \eqn{c^{*}_{\mathbf{x}}} to emphasise that this value depends on covariate \eqn{\mathbf{x}}.
 }
 \value{
 As a result, the function provides a list with the following components:
 \item{call}{The matched call.}
 \item{newdata}{Data frame containing the values of the covariates at which the covariate-specific thresholds were computed.}
-\item{thresholds}{If method = "YI", the estimated covariate-specific (optimal) threshold corresponding to the covariate-specific Youden index (the one that maximises TPF/sensitivity + TNF/specificity) and if method = "FPF", the covariate-specific threshold corresponding to the specified FPF. For the Bayesian approach (\code{cROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
+\item{thresholds}{If method = "YI", the estimated covariate-specific (optimal) threshold corresponding to the covariate-specific Youden index (the one that maximises TPF/sensitivity + TNF/specificity). If method = "FPF", the covariate-specific threshold corresponding to the specified FPF, and if method = "TPF", the covariate-specific threshold corresponding to the specified TPF. For the Bayesian approach (\code{cROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
 \item{YI}{If method = "YI", the estimated covariate-specific Youden index. For the Bayesian approach (\code{cROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
-\item{FPF}{If method = "YI", the FPF corresponding to the estimated (optimal) covariate-specific thresholds (for the Bayesian approach (\code{cROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.). If method = "FPF", the supplied FPF argument.}
-\item{TPF}{The covariate-specific TPF/sensitivity corresponding to the estimated covariate-specific (optimal) threshold. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
+\item{FPF}{If method = "YI" or method = "TPF", the FPF corresponding to the estimated (optimal) covariate-specific thresholds (for the Bayesian approach (\code{cROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.). If method = "FPF", the supplied FPF argument.}
+\item{TPF}{If method = "YI" or method = "FPF", the covariate-specific TPF/sensitivity corresponding to the estimated covariate-specific (optimal) threshold. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned. If method = "TPF", the supplied TPF argument.}
 }
 \references{
 Inacio de Carvalho, V., de Carvalho, M. and Branscum, A. J. (2017). Nonparametric Bayesian Covariate-Adjusted Estimation of the Youden Index. Biometrics, \bold{73}, 1279-1288.
