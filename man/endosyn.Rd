@@ -25,11 +25,11 @@ Tome, M.A., Botana, M.A., Cadarso-Suarez, C., Rego-Iraeta, A., Fernandez-Mario, 
 
 }
 \references{
-Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. arXiv preprint arXiv:1806.00473.
+Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2022). The Covariate-Adjusted ROC Curve: The Concept and Its Importance, Review of Inferential Methods, and a New Bayesian Estimator. \emph{Statistical Science}, \bold{37}, 541 -561.
 
-Rodriguez-Alvarez, M.X., Roca-Pardinas, J. and Cadarso-Suarez, C. (2011a). ROC curve and covariates: extending induced methodology to the non-parametric framework. Statistics and Computing, 21(4), 483--49.
+Rodriguez-Alvarez, M.X., Roca-Pardinas, J. and Cadarso-Suarez, C. (2011a). ROC curve and covariates: extending induced methodology to the non-parametric framework. \emph{Statistics and Computing}, \bold{21(4)}, 483--49.
 
-Rodriguez- Alvarez, M.X., Roca-Pardinas, J. and Cadarso-Suarez, C. (2011b). A new flexible direct ROC regression model - Application to the detection of cardiovascular risk factors by anthropometric measures. Computational Statistics and Data Analysis, 55(12), 3257--3270.
+Rodriguez- Alvarez, M.X., Roca-Pardinas, J. and Cadarso-Suarez, C. (2011b). A new flexible direct ROC regression model - Application to the detection of cardiovascular risk factors by anthropometric measures. \emph{Computational Statistics and Data Analysis}, \bold{55(12)}, 3257--3270.
 }
 \examples{
 data(endosyn)

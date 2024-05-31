@@ -65,13 +65,14 @@ As a result, the function provides a list with the following components:
 \item{fit}{List with the following components: (1) \code{bw.mean}: An object of class \code{\link[np:np.regression.bw]{npregbw}} with the selected bandwidth for the nonparametric regression function. For further details, see  \code{R}-package \code{\link[np:np-package]{np}}. (2) \code{bw.var}: An object of class \code{\link[np:np.regression.bw]{npregbw}} with the selected bandwidth for the nonparametric variance function. For further details, see  \code{R}-package \code{\link[np:np-package]{np}}. (3) \code{fit.mean}: An object of class \code{\link[np:np.regression]{npreg}} with the nonparametric regression function estimate. For further details, see  \code{R}-package \code{\link[np:np-package]{np}}. (4) \code{fit.var}: An object of class \code{\link[np:np.regression]{npreg}} with the nonparametric variance function estimate. For further details, see  \code{R}-package \code{\link[np:np-package]{np}}.}
 }
 \references{
-Hayfield, T., and Racine, J. S. (2008). Nonparametric Econometrics: The np Package. Journal of Statistical Software 27(5). URL http://www.jstatsoft.org/v27/i05/.
+Hayfield, T., and Racine, J. S. (2008). Nonparametric Econometrics: The np Package. \emph{Journal of Statistical Software}, 27(5). URL http://www.jstatsoft.org/v27/i05/.
 
-Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. arXiv preprint arXiv:1806.00473.
+Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2022). The Covariate-Adjusted ROC Curve: The Concept and Its Importance, Review of Inferential Methods, and a New Bayesian Estimator. \emph{Statistical Science}, \bold{37}, 541 -561.
 
-Janes, H., and Pepe, M.S. (2009). Adjusting for covariate effects on classification accuracy using the covariate-adjusted receiver operating characteristic curve. Biometrika, \bold{96}, 371--382.
 
-Rodriguez-Alvarez, M. X., Roca-Pardinas, J., and Cadarso-Suarez, C. (2011). ROC curve and covariates: extending induced methodology to the non-parametric framework. Statistics and Computing, \bold{21}, 483--499.
+Janes, H., and Pepe, M.S. (2009). Adjusting for covariate effects on classification accuracy using the covariate-adjusted receiver operating characteristic curve. \emph{Biometrika}, \bold{96}, 371--382.
+
+Rodriguez-Alvarez, M. X., Roca-Pardinas, J., and Cadarso-Suarez, C. (2011). ROC curve and covariates: extending induced methodology to the non-parametric framework. \emph{Statistics and Computing}, \bold{21}, 483--499.
 }
 %\author{
 %%  ~~who you are~~

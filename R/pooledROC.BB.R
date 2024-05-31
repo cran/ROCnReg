@@ -10,15 +10,15 @@ function(marker, group, tag.h, data, p = seq(0, 1, l = 101), B = 5000, ci.level 
         q1 <- rexp(n1, 1)
         weights.d <- q1/sum(q1)
         
-        u <- 1 - ewcdf(yh, weights.h)(yd)
-        rocbbpool <- ewcdf(u, weights.d)(p)
+        u <- 1 - spatstat.univar::ewcdf(yh, weights.h)(yd)
+        rocbbpool <- spatstat.univar::ewcdf(u, weights.d)(p)
         aucbbpool <- sum((1-u)* weights.d)
 
         if(pauc$compute) {
             if(pauc$focus == "FPF") {
                 paucbbpool <- sum((pauc$value - pmin(u, pauc$value))*weights.d)
             } else {
-                u1 <- 1 - ewcdf(yd, weights.d)(yh)
+                u1 <- 1 - spatstat.univar::ewcdf(yd, weights.d)(yh)
                 paucbbpool <- sum((pmax(u1, pauc$value)-pauc$value)*weights.h)
             }
         }

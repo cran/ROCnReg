@@ -28,11 +28,11 @@ function(object, newdata, ...) {
                     Xp_aux <- model.matrix(object$terms[[i]], data = mfp, contrasts.arg = attr(object$terms[[i]], "contrast"))[,-1, drop = FALSE]
                     Xp <- cbind(Xp, Xp_aux)
                 } else {
-                    Bs <- suppressWarnings(predict.bbase.os(object$terms[[i]], newdata[,object$iformula$II[2,i]]))
+                    Bs <- suppressWarnings(predict_bbase_os(object$terms[[i]], newdata[,object$iformula$II[2,i]]))
                     Xp <- cbind(Xp, Bs)
                 }
             } else { # Factor by curve
-                Bs <- predict.bbase.interaction.factor.by.curve.os(object$terms[[i]], newdata[,object$iformula$II[2,i]], newdata[,object$iformula$II[1,i]])
+                Bs <- predict_bbase_interaction_factor_by_curve_os(object$terms[[i]], newdata[,object$iformula$II[2,i]], newdata[,object$iformula$II[1,i]])
                 Xp <- cbind(Xp, Bs)
             }
         }

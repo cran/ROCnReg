@@ -1,4 +1,4 @@
-predict.bbase.interaction.factor.by.curve.os <-
+predict_bbase_interaction_factor_by_curve_os <-
 function(object, newx, newfactor) {
 	newfactor <- droplevels(newfactor)
 	factor.levels <- levels(newfactor)
@@ -19,7 +19,7 @@ function(object, newx, newfactor) {
 	interaction.smooth.part.pred <- list()
 	interaction.smooth.part <- attr(object,"interaction.smooth.part")
 	for(i in 1:length(factor.levels)) {
-			Baux <- suppressWarnings(predict.bbase.os(interaction.smooth.part[[factor.levels[i]]], newx[newfactor == factor.levels[i]]))
+			Baux <- suppressWarnings(predict_bbase_os(interaction.smooth.part[[factor.levels[i]]], newx[newfactor == factor.levels[i]]))
 			attributes(Baux) <- attributes(Baux)["dim"]
 			interaction.smooth.part.pred[[i]] <- Baux
 	}

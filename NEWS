@@ -41,4 +41,8 @@
 
 	o	It is now possible to compute threshold values by fixing the TPF. See functions compute.threshold.cROC() and compute.threshold.pooledROC() for details
 
+	CHANGES in `ROCnReg' VERSION 1.0-9
+
+	o	Update due to ewcdf being moved from spatstat.geom to spatstat.univar.
+
 		

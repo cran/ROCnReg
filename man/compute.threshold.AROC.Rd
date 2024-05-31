@@ -44,11 +44,11 @@ As a result, the function provides a list with the following components:
 \item{FPF}{If criterion = "YI", the FPF where the Youden index is attained, and if criterion = "FPF", the supplied FPF argument. For the Bayesian approach (\code{AROC.bnp}), in addition to the posterior mean, the \code{ci.level}*100\% pointwise credible band is also returned.}
 }
 \references{
-Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. arXiv preprint arXiv:1806.00473.
+Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2022). The Covariate-Adjusted ROC Curve: The Concept and Its Importance, Review of Inferential Methods, and a New Bayesian Estimator. \emph{Statistical Science}, \bold{37}, 541 -561.
 
-Rodriguez-Alvarez, M. X., Roca-Pardinas, J., and Cadarso-Suarez, C. (2011). ROC curve and covariates: extending induced methodology to the non-parametric framework. Statistics and Computing, \bold{21}, 483--499.
+Rodriguez-Alvarez, M. X., Roca-Pardinas, J., and Cadarso-Suarez, C. (2011). ROC curve and covariates: extending induced methodology to the non-parametric framework. \emph{Statistics and Computing}, \bold{21}, 483--499.
 
-Rutter, C.M. and Miglioretti, D. L. (2003). Estimating the Accuracy of Psychological Scales Using Longitudinal Data. Biostatistics, \bold{4}, 97--107.
+Rutter, C.M. and Miglioretti, D. L. (2003). Estimating the Accuracy of Psychological Scales Using Longitudinal Data. \emph{Biostatistics}, \bold{4}, 97--107.
 
 Youden, W. J. (1950). Index for rating diagnostic tests. Cancer, \bold{3}, 32--35.
 }

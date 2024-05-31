@@ -1,4 +1,4 @@
-predictive.checks.helper <-
+predictive_checks_helper <-
 function(y, yrep, marker, statistics, devnew, group = c("D", "H"), ndensity = NULL) {
 	group <- match.arg(group)
 	main.stat <- paste0(statistics, " (Group ", group, ")")

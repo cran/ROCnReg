@@ -27,9 +27,9 @@ As a result, the function provides a list with the following components:
 \item{y}{List of numeric vectors associated with the diseased (d) and nondiseased (h) groups. The vector contains the observed diagnostic test outcomes. For \code{AROC} objects, the list only contains results for the nondiseased group.}
 }
 \references{
-Gabry, J., Simpson, D., Vehtari, A., Betancourt, M., and Gelman, A. (2019). Visualization in Bayesian workflow. Journal of the Royal Statistical Society, Series A, 182, 1--14.
+Gabry, J., Simpson, D., Vehtari, A., Betancourt, M., and Gelman, A. (2019). Visualization in Bayesian workflow. \emph{Journal of the Royal Statistical Society, Series A}, \bold{182}, 1--14.
 
-Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. arXiv preprint arXiv:1806.00473.
+Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2022). The Covariate-Adjusted ROC Curve: The Concept and Its Importance, Review of Inferential Methods, and a New Bayesian Estimator. \emph{Statistical Science}, \bold{37}, 541 -561.
 }
 %\author{
 %%  ~~who you are~~

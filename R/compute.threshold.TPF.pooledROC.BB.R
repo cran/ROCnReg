@@ -1,8 +1,8 @@
 compute.threshold.TPF.pooledROC.BB <-
 function(object, TPF = 0.5, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
 	doMCMCTH <- function(k, y.h, weights.h, y.d, weights.d, TPF) {
-		thresholds.s <- quantile(ewcdf(y.d, weights.d[,k]), 1- TPF, type = 1)
-		FPF.s <- 1 - ewcdf(y.h, weights.h[,k])(thresholds.s)
+		thresholds.s <- quantile(spatstat.univar::ewcdf(y.d, weights.d[,k]), 1- TPF, type = 1)
+		FPF.s <- 1 - spatstat.univar::ewcdf(y.h, weights.h[,k])(thresholds.s)
 		res <- list()
 		res$thresholds.s <- thresholds.s
 		res$FPF.s <- FPF.s

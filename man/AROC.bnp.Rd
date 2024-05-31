@@ -80,23 +80,23 @@ interval. Note that the returned values are normalised, so that the maximum valu
 \item{data_model}{List with the data used in the fit: observed diagnostic test outcome and design matrices, separately for the healthy and diseased groups.}
 }
 \references{
-Celeux, G., Forbes, F., Robert C. P., and Titerrington, D. M. (2006). Deviance information criteria for missing data models. Bayesian Analysis, \bold{1}, 651--674.
+Celeux, G., Forbes, F., Robert C. P., and Titerrington, D. M. (2006). Deviance information criteria for missing data models. \emph{Bayesian Analysis}, \bold{1}, 651--674.
 
-De Iorio, M., Johnson, W. O., Muller, P., and Rosner, G. L. (2009). Bayesian nonparametric nonproportional hazards survival modeling. Biometrics, \bold{65}, 762--775.
+De Iorio, M., Johnson, W. O., Muller, P., and Rosner, G. L. (2009). Bayesian nonparametric nonproportional hazards survival modeling. \emph{Biometrics}, \bold{65}, 762--775.
 
-Geisser, S. and Eddy, W.F. (1979) A Predictive Approach to Model Selection, Journal of the American Statistical Association, \bold{74}, 153--160.
+Geisser, S. and Eddy, W.F. (1979) A Predictive Approach to Model Selection. \emph{Journal of the American Statistical Association}, \bold{74}, 153--160.
 
 Gelman, A., Carlin, J.B., Stern, H.S., Dunson, D.B., Vehtari, A., and Rubin, D.B. (2014). Bayesian Data Analysis, 3rd ed. CRC Press: Boca Raton, FL.
 
-Gelman, A., Hwang, J., and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. Statistics and Computing, \bold{24}, 997--1010.
+Gelman, A., Hwang, J., and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. \emph{Statistics and Computing}, \bold{24}, 997--1010.
 
-Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2018). Bayesian nonparametric inference for the covariate-adjusted ROC curve. arXiv preprint arXiv:1806.00473.
+Inacio de Carvalho, V., and Rodriguez-Alvarez, M. X. (2022). The Covariate-Adjusted ROC Curve: The Concept and Its Importance, Review of Inferential Methods, and a New Bayesian Estimator. \emph{Statistical Science}, \bold{37}, 541 -561.
 
-Rubin, D. B. (1981). The Bayesian bootstrap. The Annals of Statistics, \bold{9}, 130--134.
+Rubin, D. B. (1981). The Bayesian bootstrap. \emph{The Annals of Statistics}, \bold{9}, 130--134.
 
-Speigelhalter, D. J., Best, N. G., Carlin, B. P., and van der Linde, A. (2002). Bayesian measures of model comparison and fit. Journal of the Royal Statistical Society, Ser. B, \bold{64}, 583--639.
+Speigelhalter, D. J., Best, N. G., Carlin, B. P., and van der Linde, A. (2002). Bayesian measures of model comparison and fit. \emph{Journal of the Royal Statistical Society, Ser. B}, \bold{64}, 583--639.
 
-Watanabe, S. (2010). Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory. Journal of Machine Learning Research, \bold{11}, 3571--3594.
+Watanabe, S. (2010). Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory. \emph{Journal of Machine Learning Research}, \bold{11}, 3571--3594.
 }
 %\author{
 %%  ~~who you are~~

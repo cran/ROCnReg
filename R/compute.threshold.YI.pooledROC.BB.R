@@ -2,8 +2,8 @@ compute.threshold.YI.pooledROC.BB <-
 function(object, ci.level = 0.95, parallel = c("no", "multicore", "snow"), ncpus = 1, cl = NULL) {
   
   doMCMCTH <- function(k, y.h, weights.h, y.d, weights.d, grid) {
-    F0bb <- ewcdf(y.h, weights.h[,k])
-    F1bb <- ewcdf(y.d, weights.d[,k])
+    F0bb <- spatstat.univar::ewcdf(y.h, weights.h[,k])
+    F1bb <- spatstat.univar::ewcdf(y.d, weights.d[,k])
 
     difbb <- F0bb(grid) - F1bb(grid)
 

@@ -21,7 +21,7 @@ function(object, statistics = c("min","max","kurtosis","skewness"), ndensity = 5
         }
     }
     
-    predictive.checks.helper(y = y0, yrep = yrep, object$marker, statistics = statistics, devnew = devnew, group = "H", ndensity = ndensity)
+    predictive_checks_helper(y = y0, yrep = yrep, object$marker, statistics = statistics, devnew = devnew, group = "H", ndensity = ndensity)
     
     res <- list()
     res$yrep <- list(h = yrep)

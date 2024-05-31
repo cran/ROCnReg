@@ -21,7 +21,7 @@ function(object, statistics = c("min","max","kurtosis","skewness"), ndensity = 5
             yrep0[,l] <- rnorm(n = n0, mean = as.numeric(object$data_model$X$h%*%object$fit$h$beta[l,]), sd = object$fit$h$sd[l])
         }
     }
-    predictive.checks.helper(y = y0, yrep = yrep0, object$marker, statistics = statistics, devnew = devnew, group = "H", ndensity = ndensity)
+    predictive_checks_helper(y = y0, yrep = yrep0, object$marker, statistics = statistics, devnew = devnew, group = "H", ndensity = ndensity)
     
     # Diseased group
     y1 <- object$data_model$y$d
@@ -41,7 +41,7 @@ function(object, statistics = c("min","max","kurtosis","skewness"), ndensity = 5
         }
     }
     if(devnew) dev.new()
-    predictive.checks.helper(y = y1, yrep = yrep1, object$marker, statistics = statistics, devnew = devnew, group = "D", ndensity = ndensity)
+    predictive_checks_helper(y = y1, yrep = yrep1, object$marker, statistics = statistics, devnew = devnew, group = "D", ndensity = ndensity)
     
     res <- list()
     res$yrep <- list(h = yrep0, d = yrep1)
